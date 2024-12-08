@@ -39,14 +39,18 @@ class DailyQuoteCog(commands.Cog):
         quotes_path = os.path.join(current_dir, "quotes.csv")
         try:
             with open(quotes_path, mode="r", encoding="utf-8") as file:
-                reader = csv.reader(file)
-                quotes = [
-                    {"quote": row[0], "author": row[1]}
-                    for row in reader
-                ]
+                # Get the total number of lines in the file
+                total_lines = sum(1 for _ in file)
 
-                if quotes:
-                    return random.choice(quotes)
+            # Choose a random line number
+            random_line_number = random.randint(0, total_lines - 1)
+
+            # Read the specific random line
+            with open(quotes_path, mode="r", encoding="utf-8") as file:
+                for current_line_number, line in enumerate(file):
+                    if current_line_number == random_line_number:
+                        row = line.strip().split(",")
+                        return {"quote": row[0], "author": row[1]} if len(row) > 1 else None
         except Exception as e:
             print(f"Error reading CSV: {e}")
 
