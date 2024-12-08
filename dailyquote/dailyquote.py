@@ -6,7 +6,9 @@ import discord
 import csv
 import random
 import aiocron
+import pytz
 from craiyon import Craiyon, craiyon_utils
+from datetime import datetime, timedelta
 from redbot.core import commands
 from redbot.core.bot import Red
 import requests
@@ -21,12 +23,14 @@ class DailyQuoteCog(commands.Cog):
         self.bot = bot
         self.channel_id = 202397765941198848  # Default channel ID
         self.scheduled_cron = None
-        self.set_cron_job(12, 0)  # Default time
+        self.current_cron_time = (11, 0)  # Default time
+        self.set_cron_job(11, 0)  # Default time
 
     def set_cron_job(self, hour, minute):
         if self.scheduled_cron:
             self.scheduled_cron.stop()  # Remove the previous cron job
 
+        self.current_cron_time = (hour, minute)
         cron_expr = f"{minute} {hour} * * *"
         self.scheduled_cron = aiocron.crontab(cron_expr, func=self.send_scheduled_message, start=True)
 
@@ -121,6 +125,24 @@ class DailyQuoteCog(commands.Cog):
             await ctx.send(f"Daily quotes time set to {hour:02}:{minute:02}.")
         else:
             await ctx.send("Invalid time. Please provide a valid hour (0-23) and minute (0-59).")
+
+    @commands.command()
+    async def time_until_next_quote(self, ctx):
+        """Get the time remaining until the next scheduled quote."""
+        now = datetime.now(pytz.utc)
+        hour, minute = self.current_cron_time
+        next_quote_time = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
+
+        # If the next quote time is in the past, move to the next day
+        if now >= next_quote_time:
+            next_quote_time += timedelta(days=1)
+
+        time_remaining = next_quote_time - now
+        hours, remainder = divmod(time_remaining.seconds, 3600)
+        minutes, _ = divmod(remainder, 60)
+
+        await ctx.send(f"Time remaining until the next quote: {hours} hours and {minutes} minutes.")
+
 
 async def setup(bot):
     await bot.add_cog(DailyQuoteCog(bot))
