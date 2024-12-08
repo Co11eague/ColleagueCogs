@@ -35,6 +35,7 @@ class DailyQuoteCog(commands.Cog):
         self.scheduled_cron = aiocron.crontab(cron_expr, func=self.send_scheduled_message, start=True)
 
     def get_random_quote_from_csv(self):
+        print("Getting random quote from csv")
         current_dir = os.path.dirname(os.path.abspath(__file__))
         quotes_path = os.path.join(current_dir, "quotes.csv")
         try:
@@ -45,7 +46,10 @@ class DailyQuoteCog(commands.Cog):
                     for row in reader
                 ]
 
+                print("Quotes loaded")
+
                 if quotes:
+                    print("Returning random quote")
                     return random.choice(quotes)
         except Exception as e:
             print(f"Error reading CSV: {e}")
@@ -53,6 +57,7 @@ class DailyQuoteCog(commands.Cog):
         return None
 
     async def generate_image_from_quote(self, quote_text):
+        print("Generating image from quote")
         try:
             # Initialize Craiyon
             generator = Craiyon()
@@ -83,12 +88,15 @@ class DailyQuoteCog(commands.Cog):
             return None
 
     async def send_scheduled_message(self):
+        print("Sending scheduled message")
         channel = self.bot.get_channel(self.channel_id)
         if not channel:
+            print("Channel not found")
             return
 
         random_quote = self.get_random_quote_from_csv()
         if random_quote:
+            print("Sending random quote")
             embed = discord.Embed(
                 title="Dienos mintis",
                 description=random_quote["quote"],
@@ -110,6 +118,7 @@ class DailyQuoteCog(commands.Cog):
             if emotes:
                 random_emote = random.choice(emotes)
                 await message.add_reaction(random_emote)
+
 
     @commands.command()
     async def set_quote_channel(self, ctx, channel: discord.TextChannel):
