@@ -1,23 +1,22 @@
-import base64
 import os
-from io import BytesIO
 
 import discord
 import csv
 import random
 import aiocron
+import json
 import pytz
-from craiyon import Craiyon, craiyon_utils
 from datetime import datetime, timedelta
 from redbot.core import commands
 from redbot.core.bot import Red
-import requests
-from bs4 import BeautifulSoup
+import openai
 
+API_KEY_FILE = "openai_api_key.json"
 
 
 class DailyQuoteCog(commands.Cog):
     """A cog to send a daily quote with a random emote reaction."""
+
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -25,6 +24,8 @@ class DailyQuoteCog(commands.Cog):
         self.scheduled_cron = None
         self.current_cron_time = (11, 0)  # Default time
         self.set_cron_job(11, 0)  # Default time
+        self.api_key = None
+        self.load_api_key()
 
     def set_cron_job(self, hour, minute):
         if self.scheduled_cron:
@@ -56,47 +57,63 @@ class DailyQuoteCog(commands.Cog):
 
         return None
 
+
+    def load_api_key(self):
+        """Load the OpenAI API key from the file."""
+        if os.path.exists(API_KEY_FILE):
+            with open(API_KEY_FILE, 'r') as file:
+                data = json.load(file)
+                self.api_key = data.get('api_key')
+                if self.api_key:
+                    openai.api_key = self.api_key
+
+    def save_api_key(self, api_key):
+        """Save the OpenAI API key to a file."""
+        with open(API_KEY_FILE, 'w') as file:
+            json.dump({"api_key": api_key}, file)
+
+    @commands.command()
+    async def set_openai_key(self, ctx, api_key: str):
+        """Set the OpenAI API key."""
+        self.save_api_key(api_key)
+        openai.api_key = api_key
+        await ctx.send("OpenAI API key has been set successfully.")
+
+    @commands.command()
+    async def check_openai_key(self, ctx):
+        """Check if the OpenAI API key is set."""
+        if self.api_key:
+            await ctx.send("The OpenAI API key is set and ready to use.")
+        else:
+            await ctx.send("No OpenAI API key has been set.")
+
     async def generate_image_from_quote(self, quote_text):
-        print("Generating image from quote")
+        if not openai.api_key:
+            return "API key not set. Please set your OpenAI API key first."
+
         try:
-            # Initialize Craiyon
-            generator = Craiyon()
+            # Request image from OpenAI DALL·E
+            # Request image from OpenAI's DALL·E model (using the updated API)
+            response = openai.Image.create(
+                prompt=quote_text,
+                n=1,
+                size="1024x1024"
+            )
 
-            # Generate images asynchronously using the provided quote
-            generated_images = await generator.async_generate(quote_text)
-
-            # Encode images to base64
-            b64_list = await craiyon_utils.async_encode_base64(generated_images.images)
-
-            # If there are any images, use the first one
-            if b64_list:
-                image = b64_list[0]  # Take the first image
-
-                # Decode the base64 image to bytes
-                img_bytes = BytesIO(base64.b64decode(image))
-                discord_image = discord.File(img_bytes)  # Create a Discord file object
-                discord_image.filename = "quote_image.webp"  # Name the file
-
-                return discord_image  # Return only one image
-
-            else:
-                print("No images generated.")
-                return None
-
+            # Retrieve the image URL
+            image_url = response['data'][0]['url']
+            return image_url
         except Exception as e:
-            print(f"An error occurred while generating the image: {e}")
+            print(f"Error generating image from OpenAI: {e}")
             return None
 
     async def send_scheduled_message(self):
-        print("Sending scheduled message")
         channel = self.bot.get_channel(self.channel_id)
         if not channel:
-            print("Channel not found")
             return
 
         random_quote = self.get_random_quote_from_csv()
         if random_quote:
-            print("Sending random quote")
             embed = discord.Embed(
                 title="Dienos mintis",
                 description=random_quote["quote"],
@@ -104,17 +121,16 @@ class DailyQuoteCog(commands.Cog):
             )
             embed.set_footer(text=f"- {random_quote['author']}")
 
-            # Generate an image based on the quote
-            image = await self.generate_image_from_quote(random_quote["quote"])
-            if image:
-                # Send the embed with the image as an attachment
-                message = await channel.send(embed=embed, files=[image])
-            else:
-                message = await channel.send(embed=embed)
+            # Generate the image as raw data
+            image_url = await self.generate_image_from_quote(random_quote["quote"])
+            if image_url:
+                embed.set_image(url=image_url)  # Embed the image URL in the message
 
+            message = await channel.send(embed=embed)
+
+            # React to the message with a random emote
             guild = channel.guild
             emotes = guild.emojis
-
             if emotes:
                 random_emote = random.choice(emotes)
                 await message.add_reaction(random_emote)
