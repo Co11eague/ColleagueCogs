@@ -90,14 +90,15 @@ class DailyQuoteCog(commands.Cog):
         else:
             await ctx.send("No OpenAI API key has been set.")
 
-    async def generate_image_from_quote(self, quote_text):
+    async def generate_image_from_quote(self, quote_text, author):
         if not self.api_key:
             return "API key not set. Please set your OpenAI API key first."
 
         try:
             # Request image from OpenAI's DALL·E model (using the updated API)
             response = self.client.images.generate(
-                prompt=quote_text,
+                prompt=f'Create an image based on this quote: "{quote_text} {author}"',
+                model="dall-e-3",
                 n=1,
                 size="1024x1024"
             )
@@ -124,7 +125,7 @@ class DailyQuoteCog(commands.Cog):
             embed.set_footer(text=f"- {random_quote['author']}")
 
             # Generate the image as raw data
-            image_url = await self.generate_image_from_quote(random_quote["quote"])
+            image_url = await self.generate_image_from_quote(random_quote["quote"], random_quote["author"])
             if image_url:
                 embed.set_image(url=image_url)  # Embed the image URL in the message
 
