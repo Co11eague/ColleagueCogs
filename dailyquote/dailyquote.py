@@ -22,8 +22,8 @@ class DailyQuoteCog(commands.Cog):
         self.bot = bot
         self.channel_id = 202397765941198848  # Default channel ID
         self.scheduled_cron = None
-        self.current_cron_time = (11, 0)  # Default time
-        self.set_cron_job(11, 0)  # Default time
+        self.current_cron_time = (13, 0)  # Default time
+        self.set_cron_job(13, 0)  # Default time
         self.api_key = None
         self.load_api_key()
 
@@ -154,7 +154,7 @@ class DailyQuoteCog(commands.Cog):
     @commands.command()
     async def time_until_next_quote(self, ctx):
         """Get the time remaining until the next scheduled quote."""
-        now = datetime.now(pytz.utc)
+        now = datetime.now(pytz.timezone('Europe/Berlin'))
         hour, minute = self.current_cron_time
         next_quote_time = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
 
