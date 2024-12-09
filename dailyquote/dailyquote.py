@@ -9,7 +9,7 @@ import pytz
 from datetime import datetime, timedelta
 from redbot.core import commands
 from redbot.core.bot import Red
-import openai
+from openai import OpenAI
 
 API_KEY_FILE = "openai_api_key.json"
 
@@ -24,6 +24,7 @@ class DailyQuoteCog(commands.Cog):
         self.scheduled_cron = None
         self.current_cron_time = (13, 0)  # Default time
         self.set_cron_job(13, 0)  # Default time
+        self.client = None  # Initialize client as None
         self.api_key = None
         self.load_api_key()
 
@@ -65,7 +66,8 @@ class DailyQuoteCog(commands.Cog):
                 data = json.load(file)
                 self.api_key = data.get('api_key')
                 if self.api_key:
-                    openai.api_key = self.api_key
+                    # Updated API client setup
+                    self.client = OpenAI(api_key=self.api_key)
 
     def save_api_key(self, api_key):
         """Save the OpenAI API key to a file."""
@@ -76,7 +78,8 @@ class DailyQuoteCog(commands.Cog):
     async def set_openai_key(self, ctx, api_key: str):
         """Set the OpenAI API key."""
         self.save_api_key(api_key)
-        openai.api_key = api_key
+        # Updated API client setup
+        self.client = OpenAI(api_key=api_key)
         await ctx.send("OpenAI API key has been set successfully.")
 
     @commands.command()
@@ -88,20 +91,19 @@ class DailyQuoteCog(commands.Cog):
             await ctx.send("No OpenAI API key has been set.")
 
     async def generate_image_from_quote(self, quote_text):
-        if not openai.api_key:
+        if not self.api_key:
             return "API key not set. Please set your OpenAI API key first."
 
         try:
-            # Request image from OpenAI DALL·E
             # Request image from OpenAI's DALL·E model (using the updated API)
-            response = openai.Image.create(
+            response = self.client.images.generate(
                 prompt=quote_text,
                 n=1,
                 size="1024x1024"
             )
 
             # Retrieve the image URL
-            image_url = response['data'][0]['url']
+            image_url = response.data[0].url
             return image_url
         except Exception as e:
             print(f"Error generating image from OpenAI: {e}")
