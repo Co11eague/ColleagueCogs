@@ -22,8 +22,8 @@ class DailyQuoteCog(commands.Cog):
         self.bot = bot
         self.channel_id = 202397765941198848  # Default channel ID
         self.scheduled_cron = None
-        self.current_cron_time = (13, 0)  # Default time
-        self.set_cron_job(13, 0)  # Default time
+        self.current_cron_time = (12, 0)  # Default time
+        self.set_cron_job(12, 0)  # Default time
         self.client = None  # Initialize client as None
         self.api_key = None
         self.load_api_key()
@@ -97,7 +97,7 @@ class DailyQuoteCog(commands.Cog):
         try:
             # Request image from OpenAI's DALL·E model (using the updated API)
             response = self.client.images.generate(
-                prompt=f'Create an image based on this quote: "{quote_text} {author}"',
+                prompt=f'Create an image, no text, based on this quote: "{quote_text} {author}"',
                 model="dall-e-3",
                 n=1,
                 size="1024x1024"
