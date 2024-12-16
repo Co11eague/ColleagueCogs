@@ -1,3 +1,4 @@
+import io
 import os
 
 import discord
@@ -10,6 +11,7 @@ from datetime import datetime, timedelta
 from redbot.core import commands
 from redbot.core.bot import Red
 from openai import OpenAI
+import aiohttp
 
 API_KEY_FILE = "openai_api_key.json"
 
@@ -125,11 +127,29 @@ class DailyQuoteCog(commands.Cog):
             embed.set_footer(text=f"- {random_quote['author']}")
 
             # Generate the image as raw data
+            # Generate the image and handle as an attachment
             image_url = await self.generate_image_from_quote(random_quote["quote"], random_quote["author"])
             if image_url:
-                embed.set_image(url=image_url)  # Embed the image URL in the message
+                try:
+                    print("Image generated")
+                    # Download the image
+                    async with aiohttp.ClientSession() as session:
+                        async with session.get(image_url) as response:
+                            if response.status == 200:
+                                # Read image data
+                                img_data = await response.read()
 
-            message = await channel.send(embed=embed)
+                                # Send the image as a file
+                                image_file = discord.File(io.BytesIO(img_data), filename="quote_image.png")
+                                message = await channel.send(embed=embed, file=image_file)
+                            else:
+                                message = await channel.send("Failed to download the generated image.")
+
+                except Exception as e:
+                    print(f"Error downloading or sending the image: {e}")
+                    message = await channel.send(embed=embed)  # Send the embed without an image if an error occurs
+            else:
+                message = await channel.send(embed=embed)  # Send the embed without an image if generation failed
 
             # React to the message with a random emote
             guild = channel.guild
@@ -157,7 +177,7 @@ class DailyQuoteCog(commands.Cog):
     @commands.command()
     async def time_until_next_quote(self, ctx):
         """Get the time remaining until the next scheduled quote."""
-        now = datetime.now(pytz.timezone('Europe/Berlin'))
+        now = datetime.now(pytz.utc)
         hour, minute = self.current_cron_time
         next_quote_time = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
 
