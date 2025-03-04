@@ -99,7 +99,7 @@ class DailyQuoteCog(commands.Cog):
         try:
             # Request image from OpenAI's DALL·E model (using the updated API)
             response = self.client.images.generate(
-                prompt=f'Create a humorous, entertaining, and whimsical image with vibrant colors and exaggerated features, no text, that brings to life the following quote: "{quote_text}" - {author}',
+                prompt=f'Create a humorous, entertaining, and whimsical image with exaggerated features. Use the following quote purely as inspiration: "{quote_text}" - {author}. Do not include any text, letters, or numbers in the image—only visual elements.',
                 model="dall-e-3",
                 n=1,
                 size="1024x1024"
