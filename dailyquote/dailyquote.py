@@ -13,7 +13,7 @@ from redbot.core.bot import Red
 from openai import OpenAI
 import aiohttp
 
-API_KEY_FILE = "openai_api_key.json"
+API_KEY_FILE = "/home/colleague/bot/cogs/CogManager/cogs/dailyquote/openai_api_key.json"
 
 
 class DailyQuoteCog(commands.Cog):
