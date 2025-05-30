@@ -99,9 +99,9 @@ class DailyQuoteCog(commands.Cog):
         try:
             # Request image from OpenAI's DALL·E model (using the updated API)
             response = self.client.images.generate(
-                prompt=f'Create a funny realistic image. Use the following quote purely as inspiration: "{quote_text}" - {author}. Do not include any text, letters, or numbers in the image—only visual elements.',
-                model="gpt-image-1",
-                quality="medium",
+                prompt=f'Create a humorous, entertaining, and whimsical photorealistic image with exaggerated features. Use the following quote purely as inspiration: "{quote_text}" - {author}. Do not include any text, letters, or numbers in the image—only visual elements.',
+                model="dall-e-3",
+                n=1,
                 size="1024x1024"
             )
 
