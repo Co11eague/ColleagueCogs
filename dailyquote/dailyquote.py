@@ -99,10 +99,22 @@ class DailyQuoteCog(commands.Cog):
         try:
             # Request image from OpenAI's DALL·E model (using the updated API)
             response = self.client.images.generate(
-                prompt=f'Create a humorous, entertaining, and whimsical photorealistic image with exaggerated features. Use the following quote purely as inspiration: "{quote_text}" - {author}. Do not include any text, letters, or numbers in the image—only visual elements.',
-                model="dall-e-3",
+                model="gpt-image-1",
+                prompt=(
+                    f"Create a highly detailed, photo-realistic image inspired by the quote: {quote_text} - {author}. "
+                    f"\n\nGuidelines:\n"
+                    f"- The main characters must all be realistic cats, behaving or dressed in ways that express the theme or mood of the quote.\n"
+                    f"- Do NOT include the quote text anywhere in the image.\n"
+                    f"- Optional small text can appear naturally inside the scene (e.g., signs, posters, product labels, graffiti, book titles, speech bubbles), but never the actual quote.\n"
+                    f"- Use realistic lighting, shadows, fur textures, and materials — the cats should look convincingly real while doing something imaginative or funny.\n"
+                    f"- Each image should tell a mini-story or visual metaphor that captures the spirit of the quote (humorous, dramatic, surreal, or heartfelt).\n"
+                    f"- Keep backgrounds photorealistic but coherent with the theme (e.g., city street, cozy living room, forest, café, outer space with believable lighting).\n"
+                    f"- Use cinematic composition and depth of field for realism.\n"
+                    f"- Aspect ratio: 1:1 (square), suitable for daily posts."
+                ),
                 n=1,
-                size="1024x1024"
+                size="1024x1024",
+                quality="medium"
             )
 
             # Retrieve the image URL
