@@ -99,22 +99,21 @@ class DailyQuoteCog(commands.Cog):
         try:
             # Request image from OpenAI's DALL·E model (using the updated API)
             response = self.client.images.generate(
-                model="gpt-image-1",
+                model="dall-e-3",
                 prompt=(
-                    f"Create a highly detailed, photo-realistic image inspired by the quote: {quote_text} - {author}. "
-                    f"\n\nGuidelines:\n"
-                    f"- The main characters must all be realistic cats, behaving or dressed in ways that express the theme or mood of the quote.\n"
-                    f"- Do NOT include the quote text anywhere in the image.\n"
-                    f"- Optional small text can appear naturally inside the scene (e.g., signs, posters, product labels, graffiti, book titles, speech bubbles), but never the actual quote.\n"
-                    f"- Use realistic lighting, shadows, fur textures, and materials — the cats should look convincingly real while doing something imaginative or funny.\n"
-                    f"- Each image should tell a mini-story or visual metaphor that captures the spirit of the quote (humorous, dramatic, surreal, or heartfelt).\n"
-                    f"- Keep backgrounds photorealistic but coherent with the theme (e.g., city street, cozy living room, forest, café, outer space with believable lighting).\n"
-                    f"- Use cinematic composition and depth of field for realism.\n"
-                    f"- Aspect ratio: 1:1 (square), suitable for daily posts."
+                    f"Create a highly detailed, photorealistic image inspired by the quote: {quote_text} - {author}. "
+                    f"The scene should feature realistic cats as the main characters, behaving or dressed in ways that visually express the emotion or theme of the quote. "
+                    f"The cats should look convincingly real, with lifelike fur textures, natural lighting, and believable shadows. "
+                    f"They might be doing something imaginative, funny, dramatic, surreal, or heartfelt — whatever best fits the spirit of the quote. "
+                    f"Include a coherent, photorealistic background that matches the theme, such as a cozy living room, a bustling city street, a forest, a café, or even outer space, "
+                    f"but keep it realistic with cinematic lighting and depth of field. "
+                    f"Do not include any visible text, letters, or numbers from the quote itself. "
+                    f"However, small natural text elements that fit the setting (like signs, book covers, or graffiti) are acceptable. "
+                    f"The final composition should look like a cinematic moment or a mini visual story featuring these cats. "
+                    f"Aspect ratio: 1:1 (square)."
                 ),
                 n=1,
-                size="1024x1024",
-                quality="medium"
+                size="1024x1024"
             )
 
             # Retrieve the image URL
