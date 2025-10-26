@@ -37,7 +37,11 @@ class DailyQuoteCog(commands.Cog):
 
         self.current_cron_time = (hour, minute)
         cron_expr = f"{minute} {hour} * * *"
-        self.scheduled_cron = aiocron.crontab(cron_expr, func=self.send_scheduled_message, start=True)
+        self.scheduled_cron = aiocron.crontab(
+            cron_expr,
+            func=lambda: asyncio.create_task(self.send_scheduled_message()),
+            start=True
+        )
 
     def get_random_quote_from_csv(self):
         print("Getting random quote from csv")
