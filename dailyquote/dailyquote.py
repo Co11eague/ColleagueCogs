@@ -95,39 +95,48 @@ class DailyQuoteCog(commands.Cog):
 
     async def generate_image_from_quote(self, quote_text, author):
         if not self.api_key:
-            return "API key not set. Please set your OpenAI API key first."
+            return None
 
         try:
-            # Request image from OpenAI's DALL·E model (using the updated API)
-            response = response = await asyncio.to_thread (
-                self.client.images.generate,
-                model="gpt-image-1",
-                prompt=(
-                    f"Create a highly detailed, photo-realistic image directly inspired by the quote: \"{quote_text}\" - {author}. "
-                    f"Interpret the emotional tone, mood, and deeper meaning of the quote and express it visually through the scene. "
-                    f"The image should feature realistic cats as the main characters — lifelike, expressive, and fully integrated into the story being told by the quote. "
-                    f"The scene must look believable and photorealistic, but the situation or environment can be surreal, symbolic, or dreamlike — a visual metaphor that represents the quote’s message. "
-                    f"The cats may be performing human-like actions, existing in imaginative places, or engaging with surreal elements that visually echo the spirit of the quote. "
-                    f"Focus on emotional storytelling and symbolic imagery, as if the quote has come to life visually.\n\n"
-                    f"Guidelines:\n"
-                    f"- Do NOT include the actual quote text anywhere in the image.\n"
-                    f"- Optional small text may appear naturally in the environment (like signs, labels, or graffiti) but never the quote itself.\n"
-                    f"- Keep lighting, materials, and fur highly realistic, with cinematic depth, mood, and composition.\n"
-                    f"- The background should enhance the quote’s tone — for example, peaceful, dramatic, hopeful, or mysterious — while staying photorealistic and coherent.\n"
-                    f"- Each image should tell a short, visual story that represents the message or emotional core of the quote through surreal realism.\n"
-                    f"- Aspect ratio: 1:1 (square), suitable for daily posts."
-                ),
-                n=1,
-                size="1024x1024",
-                quality="medium"
-            )
+            # Run the synchronous OpenAI call in a background thread
+            def _generate():
+                return self.client.images.generate(
+                    model="gpt-image-1",
+                    prompt=(
+                        f"Create a highly detailed, photo-realistic image directly inspired by the quote: \"{quote_text}\" - {author}. "
+                        f"Interpret the emotional tone, mood, and deeper meaning of the quote and express it visually through the scene. "
+                        f"The image should feature realistic cats as the main characters — lifelike, expressive, and fully integrated into the story being told by the quote. "
+                        f"The scene must look believable and photorealistic, but the situation or environment can be surreal, symbolic, or dreamlike — a visual metaphor that represents the quote’s message. "
+                        f"The cats may be performing human-like actions, existing in imaginative places, or engaging with surreal elements that visually echo the spirit of the quote. "
+                        f"Focus on emotional storytelling and symbolic imagery, as if the quote has come to life visually.\n\n"
+                        f"Guidelines:\n"
+                        f"- Do NOT include the actual quote text anywhere in the image.\n"
+                        f"- Optional small text may appear naturally in the environment (like signs, labels, or graffiti) but never the quote itself.\n"
+                        f"- Keep lighting, materials, and fur highly realistic, with cinematic depth, mood, and composition.\n"
+                        f"- The background should enhance the quote’s tone — for example, peaceful, dramatic, hopeful, or mysterious — while staying photorealistic and coherent.\n"
+                        f"- Each image should tell a short, visual story that represents the message or emotional core of the quote through surreal realism.\n"
+                        f"- Aspect ratio: 1:1 (square), suitable for daily posts."
+                    ),
+                    n=1,
+                    size="1024x1024",
+                    quality="medium"
+                )
 
-            # Retrieve the image URL
-            image_url = response.data[0].url
-            return image_url
+            # Execute in background thread
+            response = await asyncio.to_thread(_generate)
+
+            if response and response.data:
+                image_url = response.data[0].url
+                print(f"Image successfully generated: {image_url}")
+                return image_url
+            else:
+                print("No image data returned from OpenAI.")
+                return None
+
         except Exception as e:
             print(f"Error generating image from OpenAI: {e}")
             return None
+
 
     async def send_scheduled_message(self):
         channel = self.bot.get_channel(self.channel_id)
