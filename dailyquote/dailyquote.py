@@ -13,6 +13,8 @@ from redbot.core.bot import Red
 from openai import OpenAI
 import aiohttp
 import asyncio
+import base64
+
 
 API_KEY_FILE = "/home/colleague/bot/cogs/CogManager/cogs/dailyquote/openai_api_key.json"
 
@@ -130,9 +132,10 @@ class DailyQuoteCog(commands.Cog):
             response = await asyncio.to_thread(_generate)
 
             if response and response.data:
-                image_url = response.data[0].url
-                print(f"Image successfully generated: {image_url}")
-                return image_url
+                b64_image = response.data[0].b64_json
+                img_bytes = base64.b64decode(b64_image)
+                print("Image successfully generated")
+                return img_bytes  # Return raw bytes, not a URL
             else:
                 print("No image data returned from OpenAI.")
                 return None
@@ -158,28 +161,12 @@ class DailyQuoteCog(commands.Cog):
 
             # Generate the image as raw data
             # Generate the image and handle as an attachment
-            image_url = await self.generate_image_from_quote(random_quote["quote"], random_quote["author"])
-            if image_url:
-                try:
-                    print("Image generated")
-                    # Download the image
-                    async with aiohttp.ClientSession() as session:
-                        async with session.get(image_url) as response:
-                            if response.status == 200:
-                                # Read image data
-                                img_data = await response.read()
-
-                                # Send the image as a file
-                                image_file = discord.File(io.BytesIO(img_data), filename="quote_image.png")
-                                message = await channel.send(embed=embed, file=image_file)
-                            else:
-                                message = await channel.send("Failed to download the generated image.")
-
-                except Exception as e:
-                    print(f"Error downloading or sending the image: {e}")
-                    message = await channel.send(embed=embed)  # Send the embed without an image if an error occurs
+            image_bytes = await self.generate_image_from_quote(random_quote["quote"], random_quote["author"])
+            if image_bytes:
+                image_file = discord.File(io.BytesIO(image_bytes), filename="quote_image.png")
+                message = await channel.send(embed=embed, file=image_file)
             else:
-                message = await channel.send(embed=embed)  # Send the embed without an image if generation failed
+                message = await channel.send(embed=embed)
 
             # React to the message with a random emote
             guild = channel.guild
