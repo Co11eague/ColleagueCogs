@@ -99,21 +99,25 @@ class DailyQuoteCog(commands.Cog):
         try:
             # Request image from OpenAI's DALL·E model (using the updated API)
             response = self.client.images.generate(
-                model="dall-e-3",
+                model="gpt-image-1",
                 prompt=(
-                    f"Create a highly detailed, photorealistic image inspired by the quote: {quote_text} - {author}. "
-                    f"The scene should feature realistic cats as the main characters, behaving or dressed in ways that visually express the emotion or theme of the quote. "
-                    f"The cats should look convincingly real, with lifelike fur textures, natural lighting, and believable shadows. "
-                    f"They might be doing something imaginative, funny, dramatic, surreal, or heartfelt — whatever best fits the spirit of the quote. "
-                    f"Include a coherent, photorealistic background that matches the theme, such as a cozy living room, a bustling city street, a forest, a café, or even outer space, "
-                    f"but keep it realistic with cinematic lighting and depth of field. "
-                    f"Do not include any visible text, letters, or numbers from the quote itself. "
-                    f"However, small natural text elements that fit the setting (like signs, book covers, or graffiti) are acceptable. "
-                    f"The final composition should look like a cinematic moment or a mini visual story featuring these cats. "
-                    f"Aspect ratio: 1:1 (square)."
+                    f"Create a highly detailed, photo-realistic image directly inspired by the quote: \"{quote_text}\" - {author}. "
+                    f"Interpret the emotional tone, mood, and deeper meaning of the quote and express it visually through the scene. "
+                    f"The image should feature realistic cats as the main characters — lifelike, expressive, and fully integrated into the story being told by the quote. "
+                    f"The scene must look believable and photorealistic, but the situation or environment can be surreal, symbolic, or dreamlike — a visual metaphor that represents the quote’s message. "
+                    f"The cats may be performing human-like actions, existing in imaginative places, or engaging with surreal elements that visually echo the spirit of the quote. "
+                    f"Focus on emotional storytelling and symbolic imagery, as if the quote has come to life visually.\n\n"
+                    f"Guidelines:\n"
+                    f"- Do NOT include the actual quote text anywhere in the image.\n"
+                    f"- Optional small text may appear naturally in the environment (like signs, labels, or graffiti) but never the quote itself.\n"
+                    f"- Keep lighting, materials, and fur highly realistic, with cinematic depth, mood, and composition.\n"
+                    f"- The background should enhance the quote’s tone — for example, peaceful, dramatic, hopeful, or mysterious — while staying photorealistic and coherent.\n"
+                    f"- Each image should tell a short, visual story that represents the message or emotional core of the quote through surreal realism.\n"
+                    f"- Aspect ratio: 1:1 (square), suitable for daily posts."
                 ),
                 n=1,
-                size="1024x1024"
+                size="1024x1024",
+                quality="medium"
             )
 
             # Retrieve the image URL
