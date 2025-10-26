@@ -12,6 +12,7 @@ from redbot.core import commands
 from redbot.core.bot import Red
 from openai import OpenAI
 import aiohttp
+import asyncio
 
 API_KEY_FILE = "/home/colleague/bot/cogs/CogManager/cogs/dailyquote/openai_api_key.json"
 
@@ -98,7 +99,8 @@ class DailyQuoteCog(commands.Cog):
 
         try:
             # Request image from OpenAI's DALL·E model (using the updated API)
-            response = self.client.images.generate(
+            response = response = await asyncio.to_thread (
+                self.client.images.generate,
                 model="gpt-image-1",
                 prompt=(
                     f"Create a highly detailed, photo-realistic image directly inspired by the quote: \"{quote_text}\" - {author}. "
