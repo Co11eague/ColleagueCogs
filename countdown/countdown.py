@@ -1,9 +1,15 @@
 import asyncio
 from datetime import datetime, date
+from io import BytesIO
 
 import aiocron
 import discord
 import pytz
+
+from PIL import Image
+from PIL import ImageDraw
+from PIL import ImageFont
+
 from redbot.core import commands
 from redbot.core.bot import Red
 
@@ -67,17 +73,14 @@ COUNTDOWN_FACTS = {
 
 
 class HolidayCountdown(commands.Cog):
-    """Kasdienis Malagos countdown."""
+    """Malaga countdown."""
 
     def __init__(self, bot: Red):
         self.bot = bot
 
         self.channel_id = 202397765941198848
 
-        # Countdown start
         self.start_date = date(2026, 5, 8)
-
-        # Holiday date
         self.holiday_date = date(2026, 6, 30)
 
         self.timezone = pytz.timezone("Europe/London")
@@ -86,8 +89,24 @@ class HolidayCountdown(commands.Cog):
             self.holiday_date - self.start_date
         ).days
 
+        # Default time: 08:00
+        self.hour = 8
+        self.minute = 0
+
+        self.cron = None
+        self.set_cron_job(self.hour, self.minute)
+
+    def set_cron_job(self, hour, minute):
+        if self.cron:
+            self.cron.stop()
+
+        self.hour = hour
+        self.minute = minute
+
+        cron_expr = f"{minute} {hour} * * *"
+
         self.cron = aiocron.crontab(
-            "0 8 * * *",
+            cron_expr,
             func=lambda: asyncio.create_task(
                 self.send_countdown()
             ),
@@ -105,15 +124,146 @@ class HolidayCountdown(commands.Cog):
 
         return "dienų"
 
-    def generate_progress_bar(self, current, total, length=20):
+    def create_progress_bar(
+        self,
+        current,
+        total,
+        length=18
+    ):
         progress = current / total
+
         filled = int(length * progress)
 
-        bar = "▓" * filled + "░" * (length - filled)
+        return (
+            "🟧" * filled +
+            "⬜" * (length - filled)
+        )
 
-        percentage = round(progress * 100)
+    def create_countdown_image(
+        self,
+        days_left,
+        progress_percent,
+        fact
+    ):
+        width = 1000
+        height = 500
 
-        return f"`{bar}` {percentage}%"
+        image = Image.new(
+            "RGB",
+            (width, height),
+            (15, 23, 42)
+        )
+
+        draw = ImageDraw.Draw(image)
+
+        # Top gradient-ish banner
+        draw.rectangle(
+            [(0, 0), (width, 140)],
+            fill=(255, 140, 0)
+        )
+
+        title_font = ImageFont.truetype(
+            "DejaVuSans-Bold.ttf",
+            52
+        )
+
+        huge_font = ImageFont.truetype(
+            "DejaVuSans-Bold.ttf",
+            110
+        )
+
+        text_font = ImageFont.truetype(
+            "DejaVuSans.ttf",
+            32
+        )
+
+        small_font = ImageFont.truetype(
+            "DejaVuSans.ttf",
+            24
+        )
+
+        draw.text(
+            (40, 35),
+            "🇪🇸 MALAGA 2026",
+            fill="white",
+            font=title_font
+        )
+
+        draw.text(
+            (50, 170),
+            str(days_left),
+            fill=(255, 200, 87),
+            font=huge_font
+        )
+
+        draw.text(
+            (270, 225),
+            "dienų iki kelionės",
+            fill="white",
+            font=text_font
+        )
+
+        # Progress bar background
+        bar_x = 50
+        bar_y = 340
+        bar_width = 850
+        bar_height = 45
+
+        draw.rounded_rectangle(
+            [
+                (bar_x, bar_y),
+                (
+                    bar_x + bar_width,
+                    bar_y + bar_height
+                )
+            ],
+            radius=20,
+            fill=(55, 65, 85)
+        )
+
+        # Progress fill
+        fill_width = int(
+            bar_width * (
+                progress_percent / 100
+            )
+        )
+
+        draw.rounded_rectangle(
+            [
+                (bar_x, bar_y),
+                (
+                    bar_x + fill_width,
+                    bar_y + bar_height
+                )
+            ],
+            radius=20,
+            fill=(255, 140, 0)
+        )
+
+        draw.text(
+            (50, 405),
+            f"Kelionės progresas: {progress_percent}%",
+            fill="white",
+            font=small_font
+        )
+
+        draw.text(
+            (50, 445),
+            f"🌍 {fact}",
+            fill=(220, 220, 220),
+            font=small_font
+        )
+
+        buffer = BytesIO()
+
+        image.save(
+            buffer,
+            format="PNG"
+        )
+
+        buffer.seek(0)
+
+        return buffer
 
     async def send_countdown(self):
         try:
@@ -137,7 +287,13 @@ class HolidayCountdown(commands.Cog):
             today - self.start_date
         ).days
 
-        progress_bar = self.generate_progress_bar(
+        progress_percent = round(
+            (
+                days_passed / self.total_days
+            ) * 100
+        )
+
+        progress_bar = self.create_progress_bar(
             days_passed,
             self.total_days
         )
@@ -147,87 +303,78 @@ class HolidayCountdown(commands.Cog):
             "Kiekviena diena priartina prie Malagos."
         )
 
-        if days_left == 0:
-            message = (
-                f"Pagaliau! Šiandien skrendam į Malagą.\n\n"
+        image_buffer = self.create_countdown_image(
+            days_left,
+            progress_percent,
+            fact
+        )
+
+        file = discord.File(
+            image_buffer,
+            filename="malaga.png"
+        )
+
+        embed = discord.Embed(
+            title="✈️ Malaga Countdown",
+            description=(
                 f"{progress_bar}\n\n"
-                f"{fact}"
+                f"☀️ Kasdien vis arčiau atostogų."
+            ),
+            color=discord.Color.orange()
+        )
+
+        embed.set_image(
+            url="attachment://malaga.png"
+        )
+
+        embed.set_footer(
+            text=(
+                f"Siunčiama kasdien "
+                f"{self.hour:02}:{self.minute:02}"
             )
+        )
 
-        elif days_left == 1:
-            message = (
-                f"Liko tik 1 diena iki mūsų kelionės į Malagą.\n\n"
-                f"{progress_bar}\n\n"
-                f"{fact}"
-            )
-
-        else:
-            day_word = self.lithuanian_days(days_left)
-
-            message = (
-                f"Liko {days_left} {day_word} iki mūsų kelionės į Malagą.\n\n"
-                f"{progress_bar}\n\n"
-                f"{fact}"
-            )
-
-        await channel.send(message)
+        await channel.send(
+            embed=embed,
+            file=file
+        )
 
     @commands.command()
     async def malagacountdown(self, ctx):
         """Parodo countdown."""
 
-        now = datetime.now(self.timezone)
-        today = now.date()
+        await self.send_countdown()
 
-        days_left = (
-            self.holiday_date - today
-        ).days
+    @commands.command()
+    async def setcountdowntime(
+        self,
+        ctx,
+        hour: int,
+        minute: int
+    ):
+        """Nustato countdown laiką."""
 
-        if days_left < 0:
+        if not (
+            0 <= hour <= 23 and
+            0 <= minute <= 59
+        ):
             await ctx.send(
-                "Kelionė į Malagą jau praėjo."
+                "Neteisingas laikas."
             )
             return
 
-        days_passed = (
-            today - self.start_date
-        ).days
-
-        progress_bar = self.generate_progress_bar(
-            days_passed,
-            self.total_days
+        self.set_cron_job(
+            hour,
+            minute
         )
 
-        fact = COUNTDOWN_FACTS.get(
-            days_left,
-            "Kiekviena diena priartina prie Malagos."
+        await ctx.send(
+            f"⏰ Countdown laikas nustatytas į "
+            f"{hour:02}:{minute:02}"
         )
-
-        if days_left == 0:
-            message = (
-                f"Šiandien skrendam į Malagą!\n\n"
-                f"{progress_bar}\n\n"
-                f"{fact}"
-            )
-
-        elif days_left == 1:
-            message = (
-                f"Liko tik 1 diena iki Malagos.\n\n"
-                f"{progress_bar}\n\n"
-                f"{fact}"
-            )
-
-        else:
-            day_word = self.lithuanian_days(days_left)
-
-            message = (
-                f"Liko {days_left} {day_word} iki Malagos.\n\n"
-                f"{progress_bar}\n\n"
-                f"{fact}"
-            )
-
-        await ctx.send(message)
 
 
 async def setup(bot):
-    await bot.add_cog(HolidayCountdown(bot))
+    await bot.add_cog(
+        HolidayCountdown(bot)
+        )
