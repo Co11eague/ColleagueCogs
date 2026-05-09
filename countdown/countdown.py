@@ -83,10 +83,13 @@ class HolidayCountdown(commands.Cog):
         self.start_date = date(2026, 5, 8)
         self.holiday_date = date(2026, 6, 30)
 
-        self.timezone = pytz.timezone("Europe/London")
+        self.timezone = pytz.timezone(
+            "Europe/London"
+        )
 
         self.total_days = (
-            self.holiday_date - self.start_date
+            self.holiday_date -
+            self.start_date
         ).days
 
         self.hour = 8
@@ -110,7 +113,9 @@ class HolidayCountdown(commands.Cog):
         self.hour = hour
         self.minute = minute
 
-        cron_expr = f"{minute} {hour} * * *"
+        cron_expr = (
+            f"{minute} {hour} * * *"
+        )
 
         self.cron = aiocron.crontab(
             cron_expr,
@@ -119,6 +124,26 @@ class HolidayCountdown(commands.Cog):
             ),
             start=True
         )
+
+    def lithuanian_days(
+        self,
+        days: int
+    ):
+        if (
+            days % 10 == 1 and
+            days % 100 != 11
+        ):
+            return "diena"
+
+        if (
+            days % 10 in [2, 3, 4, 5, 6, 7, 8, 9]
+            and not (
+                11 <= days % 100 <= 19
+            )
+        ):
+            return "dienos"
+
+        return "dienų"
 
     def create_countdown_image(
         self,
@@ -176,7 +201,7 @@ class HolidayCountdown(commands.Cog):
             font=title_font
         )
 
-        # Countdown number
+        # Number
         draw.text(
             (60, 170),
             str(days_left),
@@ -184,9 +209,14 @@ class HolidayCountdown(commands.Cog):
             font=huge_font
         )
 
+        # Correct Lithuanian grammar
+        day_word = self.lithuanian_days(
+            days_left
+        )
+
         draw.text(
             (320, 235),
-            "dienų iki kelionės",
+            f"{day_word} iki kelionės",
             fill="white",
             font=text_font
         )
@@ -228,10 +258,12 @@ class HolidayCountdown(commands.Cog):
             fill=(255, 140, 0)
         )
 
-        # Progress text
         draw.text(
             (60, 425),
-            f"Kelionės progresas: {progress_percent}%",
+            (
+                f"Kelionės progresas: "
+                f"{progress_percent}%"
+            ),
             fill="white",
             font=small_font
         )
@@ -255,23 +287,31 @@ class HolidayCountdown(commands.Cog):
                 font=fact_font
             )
 
-            text_width = bbox[2] - bbox[0]
+            text_width = (
+                bbox[2] - bbox[0]
+            )
 
             if text_width <= max_width:
                 current_line = test_line
+
             else:
-                lines.append(current_line)
+                lines.append(
+                    current_line
+                )
+
                 current_line = word
 
         if current_line:
-            lines.append(current_line)
+            lines.append(
+                current_line
+            )
 
         y_text = 470
 
         for line in lines:
             draw.text(
                 (60, y_text),
-                f"🌍 {line}",
+                line,
                 fill=(220, 220, 220),
                 font=fact_font
             )
@@ -296,9 +336,12 @@ class HolidayCountdown(commands.Cog):
         try:
             if custom_channel:
                 channel = custom_channel
+
             else:
-                channel = await self.bot.fetch_channel(
-                    self.channel_id
+                channel = (
+                    await self.bot.fetch_channel(
+                        self.channel_id
+                    )
                 )
 
         except Exception:
@@ -311,31 +354,39 @@ class HolidayCountdown(commands.Cog):
         today = now.date()
 
         days_left = (
-            self.holiday_date - today
+            self.holiday_date -
+            today
         ).days
 
         if days_left < 0:
             return
 
         days_passed = (
-            today - self.start_date
+            today -
+            self.start_date
         ).days
 
         progress_percent = round(
             (
-                days_passed / self.total_days
+                days_passed /
+                self.total_days
             ) * 100
         )
 
         fact = COUNTDOWN_FACTS.get(
             days_left,
-            "Kiekviena diena priartina prie Malagos."
+            (
+                "Kiekviena diena "
+                "priartina prie Malagos."
+            )
         )
 
-        image_buffer = self.create_countdown_image(
-            days_left,
-            progress_percent,
-            fact
+        image_buffer = (
+            self.create_countdown_image(
+                days_left,
+                progress_percent,
+                fact
+            )
         )
 
         file = discord.File(
@@ -345,7 +396,8 @@ class HolidayCountdown(commands.Cog):
 
         embed = discord.Embed(
             description=(
-                "☀️ Kasdien vis arčiau atostogų."
+                "☀️ Kasdien vis arčiau "
+                "atostogų."
             ),
             color=discord.Color.orange()
         )
@@ -386,6 +438,7 @@ class HolidayCountdown(commands.Cog):
             await ctx.send(
                 "Neteisingas laikas."
             )
+
             return
 
         self.set_cron_job(
@@ -394,8 +447,11 @@ class HolidayCountdown(commands.Cog):
         )
 
         await ctx.send(
-            f"⏰ Countdown laikas nustatytas į "
-            f"{hour:02}:{minute:02}"
+            (
+                "⏰ Countdown laikas "
+                f"nustatytas į "
+                f"{hour:02}:{minute:02}"
+            )
         )
 
 
