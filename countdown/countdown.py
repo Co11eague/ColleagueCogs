@@ -89,14 +89,21 @@ class HolidayCountdown(commands.Cog):
             self.holiday_date - self.start_date
         ).days
 
-        # Default time: 08:00
         self.hour = 8
         self.minute = 0
 
         self.cron = None
-        self.set_cron_job(self.hour, self.minute)
 
-    def set_cron_job(self, hour, minute):
+        self.set_cron_job(
+            self.hour,
+            self.minute
+        )
+
+    def set_cron_job(
+        self,
+        hour,
+        minute
+    ):
         if self.cron:
             self.cron.stop()
 
@@ -113,32 +120,6 @@ class HolidayCountdown(commands.Cog):
             start=True
         )
 
-    def lithuanian_days(self, days: int):
-        if days % 10 == 1 and days % 100 != 11:
-            return "diena"
-
-        elif days % 10 in [2, 3, 4, 5, 6, 7, 8, 9] and not (
-            11 <= days % 100 <= 19
-        ):
-            return "dienos"
-
-        return "dienų"
-
-    def create_progress_bar(
-        self,
-        current,
-        total,
-        length=18
-    ):
-        progress = current / total
-
-        filled = int(length * progress)
-
-        return (
-            "🟧" * filled +
-            "⬜" * (length - filled)
-        )
-
     def create_countdown_image(
         self,
         days_left,
@@ -146,7 +127,7 @@ class HolidayCountdown(commands.Cog):
         fact
     ):
         width = 1000
-        height = 500
+        height = 560
 
         image = Image.new(
             "RGB",
@@ -156,7 +137,7 @@ class HolidayCountdown(commands.Cog):
 
         draw = ImageDraw.Draw(image)
 
-        # Top gradient-ish banner
+        # Header
         draw.rectangle(
             [(0, 0), (width, 140)],
             fill=(255, 140, 0)
@@ -164,50 +145,57 @@ class HolidayCountdown(commands.Cog):
 
         title_font = ImageFont.truetype(
             "DejaVuSans-Bold.ttf",
-            52
+            56
         )
 
         huge_font = ImageFont.truetype(
             "DejaVuSans-Bold.ttf",
-            110
+            120
         )
 
         text_font = ImageFont.truetype(
             "DejaVuSans.ttf",
-            32
+            40
         )
 
         small_font = ImageFont.truetype(
             "DejaVuSans.ttf",
+            28
+        )
+
+        fact_font = ImageFont.truetype(
+            "DejaVuSans.ttf",
             24
         )
 
+        # Header text
         draw.text(
-            (40, 35),
-            "🇪🇸 MALAGA 2026",
+            (50, 40),
+            "MALAGA 2026",
             fill="white",
             font=title_font
         )
 
+        # Countdown number
         draw.text(
-            (50, 170),
+            (60, 170),
             str(days_left),
-            fill=(255, 200, 87),
+            fill=(255, 210, 90),
             font=huge_font
         )
 
         draw.text(
-            (270, 225),
+            (320, 235),
             "dienų iki kelionės",
             fill="white",
             font=text_font
         )
 
         # Progress bar background
-        bar_x = 50
-        bar_y = 340
-        bar_width = 850
-        bar_height = 45
+        bar_x = 60
+        bar_y = 360
+        bar_width = 860
+        bar_height = 44
 
         draw.rounded_rectangle(
             [
@@ -217,8 +205,8 @@ class HolidayCountdown(commands.Cog):
                     bar_y + bar_height
                 )
             ],
-            radius=20,
-            fill=(55, 65, 85)
+            radius=25,
+            fill=(60, 70, 90)
         )
 
         # Progress fill
@@ -236,23 +224,59 @@ class HolidayCountdown(commands.Cog):
                     bar_y + bar_height
                 )
             ],
-            radius=20,
+            radius=25,
             fill=(255, 140, 0)
         )
 
+        # Progress text
         draw.text(
-            (50, 405),
+            (60, 425),
             f"Kelionės progresas: {progress_percent}%",
             fill="white",
             font=small_font
         )
 
-        draw.text(
-            (50, 445),
-            f"🌍 {fact}",
-            fill=(220, 220, 220),
-            font=small_font
-        )
+        # Wrap fact text
+        max_width = 850
+
+        words = fact.split()
+
+        lines = []
+        current_line = ""
+
+        for word in words:
+            test_line = (
+                current_line + " " + word
+            ).strip()
+
+            bbox = draw.textbbox(
+                (0, 0),
+                test_line,
+                font=fact_font
+            )
+
+            text_width = bbox[2] - bbox[0]
+
+            if text_width <= max_width:
+                current_line = test_line
+            else:
+                lines.append(current_line)
+                current_line = word
+
+        if current_line:
+            lines.append(current_line)
+
+        y_text = 470
+
+        for line in lines:
+            draw.text(
+                (60, y_text),
+                f"🌍 {line}",
+                fill=(220, 220, 220),
+                font=fact_font
+            )
+
+            y_text += 30
 
         buffer = BytesIO()
 
@@ -265,15 +289,25 @@ class HolidayCountdown(commands.Cog):
 
         return buffer
 
-    async def send_countdown(self):
+    async def send_countdown(
+        self,
+        custom_channel=None
+    ):
         try:
-            channel = await self.bot.fetch_channel(
-                self.channel_id
-            )
+            if custom_channel:
+                channel = custom_channel
+            else:
+                channel = await self.bot.fetch_channel(
+                    self.channel_id
+                )
+
         except Exception:
             return
 
-        now = datetime.now(self.timezone)
+        now = datetime.now(
+            self.timezone
+        )
+
         today = now.date()
 
         days_left = (
@@ -293,11 +327,6 @@ class HolidayCountdown(commands.Cog):
             ) * 100
         )
 
-        progress_bar = self.create_progress_bar(
-            days_passed,
-            self.total_days
-        )
-
         fact = COUNTDOWN_FACTS.get(
             days_left,
             "Kiekviena diena priartina prie Malagos."
@@ -315,10 +344,8 @@ class HolidayCountdown(commands.Cog):
         )
 
         embed = discord.Embed(
-            title="✈️ Malaga Countdown",
             description=(
-                f"{progress_bar}\n\n"
-                f"☀️ Kasdien vis arčiau atostogų."
+                "☀️ Kasdien vis arčiau atostogų."
             ),
             color=discord.Color.orange()
         )
@@ -327,23 +354,21 @@ class HolidayCountdown(commands.Cog):
             url="attachment://malaga.png"
         )
 
-        embed.set_footer(
-            text=(
-                f"Siunčiama kasdien "
-                f"{self.hour:02}:{self.minute:02}"
-            )
-        )
-
         await channel.send(
             embed=embed,
             file=file
         )
 
     @commands.command()
-    async def malagacountdown(self, ctx):
+    async def malagacountdown(
+        self,
+        ctx
+    ):
         """Parodo countdown."""
 
-        await self.send_countdown()
+        await self.send_countdown(
+            custom_channel=ctx.channel
+        )
 
     @commands.command()
     async def setcountdowntime(
@@ -377,4 +402,4 @@ class HolidayCountdown(commands.Cog):
 async def setup(bot):
     await bot.add_cog(
         HolidayCountdown(bot)
-        )
+    )
