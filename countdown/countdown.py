@@ -275,6 +275,7 @@ class HolidayCountdown(commands.Cog):
                     return self.client.images.edit(
                         model="gpt-image-2",
                         image=img,
+                        quality="medium",
                         prompt=f"""
 Use this exact image as base template.
 
