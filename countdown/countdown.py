@@ -157,10 +157,6 @@ class HolidayCountdown(commands.Cog):
         width = 1000
         height = 560
 
-        # =========================
-        # LOAD BACKGROUND
-        # =========================
-
         current_dir = os.path.dirname(
             os.path.abspath(__file__)
         )
@@ -179,62 +175,20 @@ class HolidayCountdown(commands.Cog):
             Image.LANCZOS
         )
 
-        # Slight blur for readability
+        # Light blur so overlays blend naturally
         background = background.filter(
-            ImageFilter.GaussianBlur(1)
+            ImageFilter.GaussianBlur(0.4)
         )
 
         image = background.convert("RGBA")
 
-        # =========================
-        # DARK OVERLAY
-        # =========================
-
-        dark_overlay = Image.new(
-            "RGBA",
-            (width, height),
-            (0, 0, 0, 85)
-        )
-
-        image = Image.alpha_composite(
-            image,
-            dark_overlay
-        )
-
-        # =========================
-        # GLASS PANELS
-        # =========================
-
-        panel = Image.new(
+        overlay = Image.new(
             "RGBA",
             (width, height),
             (0, 0, 0, 0)
         )
 
-        panel_draw = ImageDraw.Draw(panel)
-
-        # Main glass panel
-        panel_draw.rounded_rectangle(
-            [(30, 25), (970, 535)],
-            radius=35,
-            fill=(20, 20, 20, 80),
-            outline=(255, 255, 255, 35),
-            width=2
-        )
-
-        # Header section
-        panel_draw.rounded_rectangle(
-            [(40, 35), (960, 120)],
-            radius=25,
-            fill=(255, 140, 0, 185)
-        )
-
-        image = Image.alpha_composite(
-            image,
-            panel
-        )
-
-        draw = ImageDraw.Draw(image)
+        draw = ImageDraw.Draw(overlay)
 
         # =========================
         # FONTS
@@ -242,163 +196,236 @@ class HolidayCountdown(commands.Cog):
 
         title_font = ImageFont.truetype(
             "DejaVuSans-Bold.ttf",
-            54
+            48
         )
 
         huge_font = ImageFont.truetype(
             "DejaVuSans-Bold.ttf",
-            130
-        )
-
-        text_font = ImageFont.truetype(
-            "DejaVuSans.ttf",
-            42
+            112
         )
 
         small_font = ImageFont.truetype(
             "DejaVuSans.ttf",
-            28
+            24
         )
 
         fact_font = ImageFont.truetype(
             "DejaVuSans.ttf",
-            25
+            21
         )
 
+        day_font = ImageFont.truetype(
+            "DejaVuSans-Bold.ttf",
+            28
+        )
+
+        def text_size(text, font):
+            bbox = draw.textbbox(
+                (0, 0),
+                text,
+                font=font
+            )
+
+            return (
+                bbox[2] - bbox[0],
+                bbox[3] - bbox[1]
+            )
+
         # =========================
-        # TITLE
+        # MAIN WOODEN BOARD
         # =========================
 
+        board_x1 = 35
+        board_y1 = 35
+        board_x2 = 585
+        board_y2 = 535
+
+        # Shadow
+        draw.rounded_rectangle(
+            [
+                (board_x1 + 8, board_y1 + 10),
+                (board_x2 + 8, board_y2 + 10)
+            ],
+            radius=32,
+            fill=(0, 0, 0, 90)
+        )
+
+        # Main board
+        draw.rounded_rectangle(
+            [
+                (board_x1, board_y1),
+                (board_x2, board_y2)
+            ],
+            radius=32,
+            fill=(56, 39, 24, 220),
+            outline=(255, 255, 255, 35),
+            width=2
+        )
+
+        # Wood plank highlights
+        for y in [
+            110,
+            170,
+            235,
+            300,
+            365,
+            430
+        ]:
+            draw.line(
+                [
+                    (board_x1 + 20, y),
+                    (board_x2 - 20, y)
+                ],
+                fill=(255, 255, 255, 10),
+                width=2
+            )
+
+        # =========================
+        # HEADER
+        # =========================
+
+        draw.rounded_rectangle(
+            [
+                (board_x1 + 18, board_y1 + 18),
+                (board_x2 - 18, board_y1 + 85)
+            ],
+            radius=24,
+            fill=(242, 151, 28, 235)
+        )
+
+        title = "MALAGA 2026"
+
+        # Shadow
         draw.text(
-            (53, 43),
-            "MALAGA 2026",
+            (74, 65),
+            title,
             fill=(0, 0, 0),
             font=title_font
         )
 
+        # Main text
         draw.text(
-            (50, 40),
-            "MALAGA 2026",
+            (71, 62),
+            title,
             fill=(255, 255, 255),
             font=title_font
         )
 
         # =========================
-        # MAIN NUMBER
+        # CALENDAR CARD
         # =========================
 
-        number_x = 65
-        number_y = 145
+        card_x1 = 60
+        card_y1 = 175
+        card_x2 = 255
+        card_y2 = 432
 
+        # Shadow
+        draw.rounded_rectangle(
+            [
+                (card_x1 + 6, card_y1 + 8),
+                (card_x2 + 6, card_y2 + 8)
+            ],
+            radius=18,
+            fill=(0, 0, 0, 70)
+        )
+
+        # Main card
+        draw.rounded_rectangle(
+            [
+                (card_x1, card_y1),
+                (card_x2, card_y2)
+            ],
+            radius=18,
+            fill=(245, 225, 190, 245),
+            outline=(120, 85, 40, 120),
+            width=2
+        )
+
+        # Pin
+        draw.rounded_rectangle(
+            [
+                (card_x1 + 80, card_y1 - 14),
+                (card_x1 + 94, card_y1 + 10)
+            ],
+            radius=4,
+            fill=(80, 55, 25, 255)
+        )
+
+        # =========================
+        # BIG NUMBER
+        # =========================
+
+        days_text = str(days_left)
+
+        text_w, text_h = text_size(
+            days_text,
+            huge_font
+        )
+
+        text_x = (
+            card_x1 +
+            ((card_x2 - card_x1) - text_w) / 2
+        )
+
+        # Shadow
         draw.text(
-            (number_x + 4, number_y + 4),
-            str(days_left),
+            (text_x + 4, card_y1 + 36 + 4),
+            days_text,
             fill=(0, 0, 0),
             font=huge_font
         )
 
+        # Main
         draw.text(
-            (number_x, number_y),
-            str(days_left),
-            fill=(255, 210, 90),
+            (text_x, card_y1 + 36),
+            days_text,
+            fill=(232, 92, 39),
             font=huge_font
         )
 
         # =========================
-        # DAYS TEXT
+        # DAY LABELS
         # =========================
 
         day_word = self.lithuanian_days(
             days_left
         )
 
+        line1 = day_word
+        line2 = "iki kelionės"
+
+        l1_w, _ = text_size(
+            line1,
+            day_font
+        )
+
+        l2_w, _ = text_size(
+            line2,
+            day_font
+        )
+
         draw.text(
-            (325, 225),
-            f"{day_word} iki kelionės",
-            fill=(255, 255, 255),
-            font=text_font
+            (
+                card_x1 +
+                ((card_x2 - card_x1) - l1_w) / 2,
+                card_y1 + 178
+            ),
+            line1,
+            fill=(40, 35, 28),
+            font=day_font
         )
 
-        # =========================
-        # PROGRESS BAR
-        # =========================
-
-        bar_x = 60
-        bar_y = 355
-        bar_width = 880
-        bar_height = 42
-
-        # Bar shadow
-        draw.rounded_rectangle(
-            [
-                (bar_x + 3, bar_y + 3),
-                (
-                    bar_x + bar_width + 3,
-                    bar_y + bar_height + 3
-                )
-            ],
-            radius=30,
-            fill=(0, 0, 0, 120)
+        draw.text(
+            (
+                card_x1 +
+                ((card_x2 - card_x1) - l2_w) / 2,
+                card_y1 + 212
+            ),
+            line2,
+            fill=(40, 35, 28),
+            font=day_font
         )
-
-        # Outer bar
-        draw.rounded_rectangle(
-            [
-                (bar_x, bar_y),
-                (
-                    bar_x + bar_width,
-                    bar_y + bar_height
-                )
-            ],
-            radius=30,
-            fill=(35, 35, 45)
-        )
-
-        # Inner bar
-        draw.rounded_rectangle(
-            [
-                (bar_x + 2, bar_y + 2),
-                (
-                    bar_x + bar_width - 2,
-                    bar_y + bar_height - 2
-                )
-            ],
-            radius=28,
-            fill=(60, 70, 90)
-        )
-
-        # Progress fill
-        fill_width = int(
-            bar_width * (
-                progress_percent / 100
-            )
-        )
-
-        if fill_width > 0:
-            draw.rounded_rectangle(
-                [
-                    (bar_x, bar_y),
-                    (
-                        bar_x + fill_width,
-                        bar_y + bar_height
-                    )
-                ],
-                radius=30,
-                fill=(255, 140, 0)
-            )
-
-            # Shine effect
-            draw.rounded_rectangle(
-                [
-                    (bar_x + 3, bar_y + 3),
-                    (
-                        bar_x + fill_width - 3,
-                        bar_y + 18
-                    )
-                ],
-                radius=20,
-                fill=(255, 200, 120)
-            )
 
         # =========================
         # PROGRESS TEXT
@@ -410,24 +437,84 @@ class HolidayCountdown(commands.Cog):
         )
 
         draw.text(
-            (63, 425),
+            (296, 177),
             progress_text,
-            fill=(0, 0, 0),
-            font=small_font
-        )
-
-        draw.text(
-            (60, 422),
-            progress_text,
-            fill=(255, 255, 255),
+            fill=(255, 255, 255, 235),
             font=small_font
         )
 
         # =========================
-        # FACT TEXT WRAPPING
+        # PROGRESS BAR
         # =========================
 
-        max_width = 860
+        bar_x1 = 295
+        bar_y1 = 215
+        bar_x2 = 545
+        bar_y2 = 252
+
+        # Shadow
+        draw.rounded_rectangle(
+            [
+                (bar_x1 + 3, bar_y1 + 3),
+                (bar_x2 + 3, bar_y2 + 3)
+            ],
+            radius=18,
+            fill=(0, 0, 0, 110)
+        )
+
+        # Bar background
+        draw.rounded_rectangle(
+            [
+                (bar_x1, bar_y1),
+                (bar_x2, bar_y2)
+            ],
+            radius=18,
+            fill=(55, 60, 75, 240),
+            outline=(255, 255, 255, 40),
+            width=1
+        )
+
+        # Fill
+        fill_width = int(
+            (bar_x2 - bar_x1) *
+            (progress_percent / 100)
+        )
+
+        if fill_width > 0:
+
+            draw.rounded_rectangle(
+                [
+                    (bar_x1, bar_y1),
+                    (
+                        bar_x1 + fill_width,
+                        bar_y2
+                    )
+                ],
+                radius=18,
+                fill=(244, 145, 32)
+            )
+
+            # Shine
+            draw.rounded_rectangle(
+                [
+                    (bar_x1 + 3, bar_y1 + 3),
+                    (
+                        bar_x1 +
+                        max(3, fill_width - 3),
+                        bar_y1 + 14
+                    )
+                ],
+                radius=12,
+                fill=(255, 220, 150, 120)
+            )
+
+        # =========================
+        # FACT TEXT
+        # =========================
+
+        fact_x = 295
+        fact_y = 285
+        max_width = 245
 
         words = fact.split()
 
@@ -435,8 +522,11 @@ class HolidayCountdown(commands.Cog):
         current_line = ""
 
         for word in words:
+
             test_line = (
-                current_line + " " + word
+                current_line +
+                " " +
+                word
             ).strip()
 
             bbox = draw.textbbox(
@@ -453,9 +543,10 @@ class HolidayCountdown(commands.Cog):
                 current_line = test_line
 
             else:
-                lines.append(
-                    current_line
-                )
+                if current_line:
+                    lines.append(
+                        current_line
+                    )
 
                 current_line = word
 
@@ -464,25 +555,59 @@ class HolidayCountdown(commands.Cog):
                 current_line
             )
 
-        y_text = 468
+        y = fact_y
 
-        for line in lines:
+        for line in lines[:7]:
 
+            # Shadow
             draw.text(
-                (63, y_text + 2),
+                (fact_x + 2, y + 2),
                 line,
-                fill=(0, 0, 0),
+                fill=(0, 0, 0, 120),
                 font=fact_font
             )
 
+            # Main text
             draw.text(
-                (60, y_text),
+                (fact_x, y),
                 line,
-                fill=(235, 235, 235),
+                fill=(240, 240, 240, 245),
                 font=fact_font
             )
 
-            y_text += 32
+            y += 28
+
+        # =========================
+        # WARM EDGE GLOW
+        # =========================
+
+        glow = Image.new(
+            "RGBA",
+            (width, height),
+            (0, 0, 0, 0)
+        )
+
+        glow_draw = ImageDraw.Draw(glow)
+
+        glow_draw.rounded_rectangle(
+            [
+                (board_x1, board_y1),
+                (board_x2, board_y2)
+            ],
+            radius=32,
+            outline=(255, 180, 80, 45),
+            width=3
+        )
+
+        overlay = Image.alpha_composite(
+            overlay,
+            glow
+        )
+
+        image = Image.alpha_composite(
+            image,
+            overlay
+        )
 
         # =========================
         # EXPORT
@@ -503,6 +628,7 @@ class HolidayCountdown(commands.Cog):
         buffer.seek(0)
 
         return buffer
+
     async def send_countdown(
         self,
         custom_channel=None
