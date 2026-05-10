@@ -523,7 +523,7 @@ Photorealistic.
             )
 
     @commands.command()
-    async def set_openai_key(
+    async def set_openai_key_forcountdown(
         self,
         ctx,
         api_key: str
