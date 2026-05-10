@@ -9,6 +9,9 @@ import pytz
 from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageFont
+from PIL import ImageFilter
+import os
+
 
 from redbot.core import commands
 from redbot.core.bot import Red
@@ -154,33 +157,102 @@ class HolidayCountdown(commands.Cog):
         width = 1000
         height = 560
 
-        image = Image.new(
-            "RGB",
+        # =========================
+        # LOAD BACKGROUND
+        # =========================
+
+        current_dir = os.path.dirname(
+            os.path.abspath(__file__)
+        )
+
+        background_path = os.path.join(
+            current_dir,
+            "malaga_background.png"
+        )
+
+        background = Image.open(
+            background_path
+        ).convert("RGB")
+
+        background = background.resize(
             (width, height),
-            (15, 23, 42)
+            Image.LANCZOS
+        )
+
+        # Slight blur for readability
+        background = background.filter(
+            ImageFilter.GaussianBlur(1.5)
+        )
+
+        image = background.convert("RGBA")
+
+        # =========================
+        # DARK OVERLAY
+        # =========================
+
+        dark_overlay = Image.new(
+            "RGBA",
+            (width, height),
+            (0, 0, 0, 85)
+        )
+
+        image = Image.alpha_composite(
+            image,
+            dark_overlay
+        )
+
+        # =========================
+        # GLASS PANELS
+        # =========================
+
+        panel = Image.new(
+            "RGBA",
+            (width, height),
+            (0, 0, 0, 0)
+        )
+
+        panel_draw = ImageDraw.Draw(panel)
+
+        # Main glass panel
+        panel_draw.rounded_rectangle(
+            [(30, 25), (970, 535)],
+            radius=35,
+            fill=(20, 20, 20, 80),
+            outline=(255, 255, 255, 35),
+            width=2
+        )
+
+        # Header section
+        panel_draw.rounded_rectangle(
+            [(40, 35), (960, 120)],
+            radius=25,
+            fill=(255, 140, 0, 185)
+        )
+
+        image = Image.alpha_composite(
+            image,
+            panel
         )
 
         draw = ImageDraw.Draw(image)
 
-        # Header
-        draw.rectangle(
-            [(0, 0), (width, 140)],
-            fill=(255, 140, 0)
-        )
+        # =========================
+        # FONTS
+        # =========================
 
         title_font = ImageFont.truetype(
             "DejaVuSans-Bold.ttf",
-            56
+            54
         )
 
         huge_font = ImageFont.truetype(
             "DejaVuSans-Bold.ttf",
-            120
+            130
         )
 
         text_font = ImageFont.truetype(
             "DejaVuSans.ttf",
-            40
+            42
         )
 
         small_font = ImageFont.truetype(
@@ -190,43 +262,86 @@ class HolidayCountdown(commands.Cog):
 
         fact_font = ImageFont.truetype(
             "DejaVuSans.ttf",
-            24
+            25
         )
 
-        # Header text
+        # =========================
+        # TITLE
+        # =========================
+
         draw.text(
-            (50, 40),
+            (53, 43),
             "MALAGA 2026",
-            fill="white",
+            fill=(0, 0, 0),
             font=title_font
         )
 
-        # Number
         draw.text(
-            (60, 170),
+            (50, 40),
+            "MALAGA 2026",
+            fill=(255, 255, 255),
+            font=title_font
+        )
+
+        # =========================
+        # MAIN NUMBER
+        # =========================
+
+        number_x = 65
+        number_y = 145
+
+        draw.text(
+            (number_x + 4, number_y + 4),
+            str(days_left),
+            fill=(0, 0, 0),
+            font=huge_font
+        )
+
+        draw.text(
+            (number_x, number_y),
             str(days_left),
             fill=(255, 210, 90),
             font=huge_font
         )
 
-        # Correct Lithuanian grammar
+        # =========================
+        # DAYS TEXT
+        # =========================
+
         day_word = self.lithuanian_days(
             days_left
         )
 
         draw.text(
-            (320, 235),
+            (325, 225),
             f"{day_word} iki kelionės",
-            fill="white",
+            fill=(255, 255, 255),
             font=text_font
         )
 
-        # Progress bar background
-        bar_x = 60
-        bar_y = 360
-        bar_width = 860
-        bar_height = 44
+        # =========================
+        # PROGRESS BAR
+        # =========================
 
+        bar_x = 60
+        bar_y = 355
+        bar_width = 880
+        bar_height = 42
+
+        # Bar shadow
+        draw.rounded_rectangle(
+            [
+                (bar_x + 3, bar_y + 3),
+                (
+                    bar_x + bar_width + 3,
+                    bar_y + bar_height + 3
+                )
+            ],
+            radius=30,
+            fill=(0, 0, 0, 120)
+        )
+
+        # Outer bar
         draw.rounded_rectangle(
             [
                 (bar_x, bar_y),
@@ -235,7 +350,20 @@ class HolidayCountdown(commands.Cog):
                     bar_y + bar_height
                 )
             ],
-            radius=25,
+            radius=30,
+            fill=(35, 35, 45)
+        )
+
+        # Inner bar
+        draw.rounded_rectangle(
+            [
+                (bar_x + 2, bar_y + 2),
+                (
+                    bar_x + bar_width - 2,
+                    bar_y + bar_height - 2
+                )
+            ],
+            radius=28,
             fill=(60, 70, 90)
         )
 
@@ -246,30 +374,60 @@ class HolidayCountdown(commands.Cog):
             )
         )
 
-        draw.rounded_rectangle(
-            [
-                (bar_x, bar_y),
-                (
-                    bar_x + fill_width,
-                    bar_y + bar_height
-                )
-            ],
-            radius=25,
-            fill=(255, 140, 0)
+        if fill_width > 0:
+            draw.rounded_rectangle(
+                [
+                    (bar_x, bar_y),
+                    (
+                        bar_x + fill_width,
+                        bar_y + bar_height
+                    )
+                ],
+                radius=30,
+                fill=(255, 140, 0)
+            )
+
+            # Shine effect
+            draw.rounded_rectangle(
+                [
+                    (bar_x + 3, bar_y + 3),
+                    (
+                        bar_x + fill_width - 3,
+                        bar_y + 18
+                    )
+                ],
+                radius=20,
+                fill=(255, 200, 120)
+            )
+
+        # =========================
+        # PROGRESS TEXT
+        # =========================
+
+        progress_text = (
+            f"Kelionės progresas: "
+            f"{progress_percent}%"
         )
 
         draw.text(
-            (60, 425),
-            (
-                f"Kelionės progresas: "
-                f"{progress_percent}%"
-            ),
-            fill="white",
+            (63, 425),
+            progress_text,
+            fill=(0, 0, 0),
             font=small_font
         )
 
-        # Wrap fact text
-        max_width = 850
+        draw.text(
+            (60, 422),
+            progress_text,
+            fill=(255, 255, 255),
+            font=small_font
+        )
+
+        # =========================
+        # FACT TEXT WRAPPING
+        # =========================
+
+        max_width = 860
 
         words = fact.split()
 
@@ -306,29 +464,45 @@ class HolidayCountdown(commands.Cog):
                 current_line
             )
 
-        y_text = 470
+        y_text = 468
 
         for line in lines:
+
             draw.text(
-                (60, y_text),
+                (63, y_text + 2),
                 line,
-                fill=(220, 220, 220),
+                fill=(0, 0, 0),
                 font=fact_font
             )
 
-            y_text += 30
+            draw.text(
+                (60, y_text),
+                line,
+                fill=(235, 235, 235),
+                font=fact_font
+            )
+
+            y_text += 32
+
+        # =========================
+        # EXPORT
+        # =========================
+
+        final_image = image.convert(
+            "RGB"
+        )
 
         buffer = BytesIO()
 
-        image.save(
+        final_image.save(
             buffer,
-            format="PNG"
+            format="PNG",
+            quality=95
         )
 
         buffer.seek(0)
 
         return buffer
-
     async def send_countdown(
         self,
         custom_channel=None
