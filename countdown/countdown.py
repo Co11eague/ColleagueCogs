@@ -276,64 +276,53 @@ class HolidayCountdown(commands.Cog):
                         model="gpt-image-2",
                         image=img,
                         prompt=f"""
-                        CRITICAL IDENTITY LOCK — DO NOT CHANGE THE PERSON:
+Use this exact image as base template.
 
-                        The person in the image must remain EXACTLY the same individual:
-                        - same face, bone structure, jawline, nose, eyes
-                        - same hairstyle and hairline
-                        - same age appearance
-                        - same skin tone
-                        - same identity and facial expression style
-                        Do NOT redesign, reinterpret, or replace the person.
+Preserve:
+- same recognizable young man
+- same festive robots
+- same tractor
+- same terrace
+- same warm Malaga sunset
+- same cinematic visual identity
 
-                        Only modify clothing, pose, and environment around him.
+Today the man is:
 
-                        ----------------------------------------
+{activity}
 
-                        BASE IMAGE:
-                        Use the uploaded image as the strict visual reference.
-                        All characters, composition, and lighting style must remain consistent.
+As countdown approaches zero,
+his behaviour becomes increasingly absurd,
+surreal and overdramatic,
+while staying photorealistic.
 
-                        ----------------------------------------
+Update the countdown board naturally.
 
-                        SCENE CHANGE (ONLY THIS PART MAY CHANGE):
+Board title:
+MALAGA 2026
 
-                        The man is now:
-                        {activity}
+Pinned calendar:
+{days_left}
 
-                        He is still in the same Malaga terrace environment with:
-                        - festive robots
-                        - tractors
-                        - sunset
-                        - cinematic luxury travel photography style unchanged
+Below:
+{self.lithuanian_days(days_left)} iki kelionės
 
-                        ----------------------------------------
+Progress bar visually filled to exactly
+{progress_percent}%
 
-                        COUNTDOWN BOARD (must remain physically present in scene):
-                        Title: MALAGA 2026
-                        Day number: {days_left}
-                        Text: {self.lithuanian_days(days_left)} iki kelionės
-                        Progress: exactly {progress_percent}%
+Fact:
+{fact}
 
-                        Fact:
-                        {fact}
+Typography must be:
+sharp
+readable
+natural
+physically integrated
 
-                        ----------------------------------------
-
-                        STYLE RULES:
-                        - photorealistic
-                        - no cartooning
-                        - no face alteration
-                        - no identity drift
-                        - no style shift
-                        - typography physically integrated into environment (wood/board material)
-                        - no digital overlay text
-
-                        ----------------------------------------
-
-                        HARD RULE:
-                        Preserve identity of the man from the reference image at all costs.
-                        """
+Professional luxury travel campaign.
+No digital overlays.
+No fake pasted graphics.
+Photorealistic.
+"""
                     )
 
             response = await asyncio.to_thread(
