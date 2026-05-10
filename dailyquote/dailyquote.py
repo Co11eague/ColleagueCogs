@@ -118,7 +118,6 @@ class DailyQuoteCog(commands.Cog):
                         f"The result should feel like a strange dream frozen in a photograph: believable, emotional, clever, and faintly eerie. "
                         f"Do not include the quote text in the image. "
                         f"Do not make it cartoonish or cute; make it real, atmospheric, and unsettling in a subtle way. "
-                        f"Aspect ratio: 1:1."
                     ),
                     n=1,
                     size="1536x1024",
