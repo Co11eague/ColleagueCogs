@@ -168,26 +168,27 @@ class HolidayCountdown(commands.Cog):
 
         background = Image.open(
             background_path
-        ).convert("RGBA")
+        ).convert("RGB")
 
         background = background.resize(
             (width, height),
             Image.LANCZOS
         )
 
-        # Slight darkening ONLY for readability
-        shade = Image.new(
+        # Light blur so overlays blend naturally
+        background = background.filter(
+            ImageFilter.GaussianBlur(0.4)
+        )
+
+        image = background.convert("RGBA")
+
+        overlay = Image.new(
             "RGBA",
             (width, height),
-            (0, 0, 0, 35)
+            (0, 0, 0, 0)
         )
 
-        image = Image.alpha_composite(
-            background,
-            shade
-        )
-
-        draw = ImageDraw.Draw(image)
+        draw = ImageDraw.Draw(overlay)
 
         # =========================
         # FONTS
@@ -195,12 +196,22 @@ class HolidayCountdown(commands.Cog):
 
         title_font = ImageFont.truetype(
             "DejaVuSans-Bold.ttf",
-            54
+            48
         )
 
         huge_font = ImageFont.truetype(
             "DejaVuSans-Bold.ttf",
-            108
+            112
+        )
+
+        small_font = ImageFont.truetype(
+            "DejaVuSans.ttf",
+            24
+        )
+
+        fact_font = ImageFont.truetype(
+            "DejaVuSans.ttf",
+            21
         )
 
         day_font = ImageFont.truetype(
@@ -208,71 +219,168 @@ class HolidayCountdown(commands.Cog):
             28
         )
 
-        progress_font = ImageFont.truetype(
-            "DejaVuSans.ttf",
-            26
-        )
+        def text_size(text, font):
+            bbox = draw.textbbox(
+                (0, 0),
+                text,
+                font=font
+            )
 
-        fact_font = ImageFont.truetype(
-            "DejaVuSans.ttf",
-            24
-        )
+            return (
+                bbox[2] - bbox[0],
+                bbox[3] - bbox[1]
+            )
 
         # =========================
-        # TITLE
+        # MAIN WOODEN BOARD
         # =========================
+
+        board_x1 = 35
+        board_y1 = 35
+        board_x2 = 585
+        board_y2 = 535
+
+        # Shadow
+        draw.rounded_rectangle(
+            [
+                (board_x1 + 8, board_y1 + 10),
+                (board_x2 + 8, board_y2 + 10)
+            ],
+            radius=32,
+            fill=(0, 0, 0, 90)
+        )
+
+        # Main board
+        draw.rounded_rectangle(
+            [
+                (board_x1, board_y1),
+                (board_x2, board_y2)
+            ],
+            radius=32,
+            fill=(56, 39, 24, 220),
+            outline=(255, 255, 255, 35),
+            width=2
+        )
+
+        # Wood plank highlights
+        for y in [
+            110,
+            170,
+            235,
+            300,
+            365,
+            430
+        ]:
+            draw.line(
+                [
+                    (board_x1 + 20, y),
+                    (board_x2 - 20, y)
+                ],
+                fill=(255, 255, 255, 10),
+                width=2
+            )
+
+        # =========================
+        # HEADER
+        # =========================
+
+        draw.rounded_rectangle(
+            [
+                (board_x1 + 18, board_y1 + 18),
+                (board_x2 - 18, board_y1 + 85)
+            ],
+            radius=24,
+            fill=(242, 151, 28, 235)
+        )
 
         title = "MALAGA 2026"
 
-        title_x = 58
-        title_y = 48
-
         # Shadow
         draw.text(
-            (title_x + 4, title_y + 4),
+            (74, 65),
             title,
-            fill=(0, 0, 0, 180),
+            fill=(0, 0, 0),
             font=title_font
         )
 
-        # Main
+        # Main text
         draw.text(
-            (title_x, title_y),
+            (71, 62),
             title,
             fill=(255, 255, 255),
             font=title_font
         )
 
         # =========================
-        # CALENDAR NUMBER
+        # CALENDAR CARD
+        # =========================
+
+        card_x1 = 60
+        card_y1 = 175
+        card_x2 = 255
+        card_y2 = 432
+
+        # Shadow
+        draw.rounded_rectangle(
+            [
+                (card_x1 + 6, card_y1 + 8),
+                (card_x2 + 6, card_y2 + 8)
+            ],
+            radius=18,
+            fill=(0, 0, 0, 70)
+        )
+
+        # Main card
+        draw.rounded_rectangle(
+            [
+                (card_x1, card_y1),
+                (card_x2, card_y2)
+            ],
+            radius=18,
+            fill=(245, 225, 190, 245),
+            outline=(120, 85, 40, 120),
+            width=2
+        )
+
+        # Pin
+        draw.rounded_rectangle(
+            [
+                (card_x1 + 80, card_y1 - 14),
+                (card_x1 + 94, card_y1 + 10)
+            ],
+            radius=4,
+            fill=(80, 55, 25, 255)
+        )
+
+        # =========================
+        # BIG NUMBER
         # =========================
 
         days_text = str(days_left)
 
-        bbox = draw.textbbox(
-            (0, 0),
+        text_w, text_h = text_size(
             days_text,
-            font=huge_font
+            huge_font
         )
 
-        text_width = bbox[2] - bbox[0]
-
-        number_x = 175 - (text_width // 2)
-        number_y = 245
+        text_x = (
+            card_x1 +
+            ((card_x2 - card_x1) - text_w) / 2
+        )
 
         # Shadow
         draw.text(
-            (number_x + 5, number_y + 5),
+            (text_x + 4, card_y1 + 36 + 4),
             days_text,
-            fill=(0, 0, 0, 170),
+            fill=(0, 0, 0),
             font=huge_font
         )
 
-        # Main number
+        # Main
         draw.text(
-            (number_x, number_y),
+            (text_x, card_y1 + 36),
             days_text,
-            fill=(235, 88, 40),
+            fill=(232, 92, 39),
             font=huge_font
         )
 
@@ -287,38 +395,35 @@ class HolidayCountdown(commands.Cog):
         line1 = day_word
         line2 = "iki kelionės"
 
-        l1_box = draw.textbbox(
-            (0, 0),
+        l1_w, _ = text_size(
             line1,
-            font=day_font
+            day_font
         )
 
-        l2_box = draw.textbbox(
-            (0, 0),
+        l2_w, _ = text_size(
             line2,
-            font=day_font
+            day_font
         )
-
-        l1_width = l1_box[2] - l1_box[0]
-        l2_width = l2_box[2] - l2_box[0]
 
         draw.text(
             (
-                175 - (l1_width // 2),
-                405
+                card_x1 +
+                ((card_x2 - card_x1) - l1_w) / 2,
+                card_y1 + 178
             ),
             line1,
-            fill=(25, 25, 25),
+            fill=(40, 35, 28),
             font=day_font
         )
 
         draw.text(
             (
-                175 - (l2_width // 2),
-                440
+                card_x1 +
+                ((card_x2 - card_x1) - l2_w) / 2,
+                card_y1 + 212
             ),
             line2,
-            fill=(25, 25, 25),
+            fill=(40, 35, 28),
             font=day_font
         )
 
@@ -331,71 +436,52 @@ class HolidayCountdown(commands.Cog):
             f"{progress_percent}%"
         )
 
-        progress_x = 340
-        progress_y = 170
-
         draw.text(
-            (progress_x + 2, progress_y + 2),
+            (296, 177),
             progress_text,
-            fill=(0, 0, 0, 140),
-            font=progress_font
-        )
-
-        draw.text(
-            (progress_x, progress_y),
-            progress_text,
-            fill=(255, 255, 255),
-            font=progress_font
+            fill=(255, 255, 255, 235),
+            font=small_font
         )
 
         # =========================
         # PROGRESS BAR
         # =========================
 
-        bar_x1 = 340
-        bar_y1 = 220
-
-        bar_x2 = 820
-        bar_y2 = 265
+        bar_x1 = 295
+        bar_y1 = 215
+        bar_x2 = 545
+        bar_y2 = 252
 
         # Shadow
         draw.rounded_rectangle(
             [
-                (bar_x1 + 4, bar_y1 + 4),
-                (bar_x2 + 4, bar_y2 + 4)
+                (bar_x1 + 3, bar_y1 + 3),
+                (bar_x2 + 3, bar_y2 + 3)
             ],
-            radius=24,
-            fill=(0, 0, 0, 120)
+            radius=18,
+            fill=(0, 0, 0, 110)
         )
 
-        # Main bar background
+        # Bar background
         draw.rounded_rectangle(
             [
                 (bar_x1, bar_y1),
                 (bar_x2, bar_y2)
             ],
-            radius=24,
-            fill=(52, 57, 74, 235)
+            radius=18,
+            fill=(55, 60, 75, 240),
+            outline=(255, 255, 255, 40),
+            width=1
         )
 
-        # Inner highlight
-        draw.rounded_rectangle(
-            [
-                (bar_x1 + 2, bar_y1 + 2),
-                (bar_x2 - 2, bar_y2 - 22)
-            ],
-            radius=20,
-            fill=(90, 100, 130, 70)
-        )
-
+        # Fill
         fill_width = int(
             (bar_x2 - bar_x1) *
             (progress_percent / 100)
         )
 
-        if fill_width > 8:
+        if fill_width > 0:
 
-            # Orange fill
             draw.rounded_rectangle(
                 [
                     (bar_x1, bar_y1),
@@ -404,31 +490,31 @@ class HolidayCountdown(commands.Cog):
                         bar_y2
                     )
                 ],
-                radius=24,
-                fill=(247, 152, 39)
+                radius=18,
+                fill=(244, 145, 32)
             )
 
             # Shine
             draw.rounded_rectangle(
                 [
-                    (bar_x1 + 4, bar_y1 + 4),
+                    (bar_x1 + 3, bar_y1 + 3),
                     (
-                        bar_x1 + fill_width - 4,
-                        bar_y1 + 18
+                        bar_x1 +
+                        max(3, fill_width - 3),
+                        bar_y1 + 14
                     )
                 ],
-                radius=18,
-                fill=(255, 225, 170, 120)
+                radius=12,
+                fill=(255, 220, 150, 120)
             )
 
         # =========================
         # FACT TEXT
         # =========================
 
-        fact_x = 340
-        fact_y = 330
-
-        max_width = 430
+        fact_x = 295
+        fact_y = 285
+        max_width = 245
 
         words = fact.split()
 
@@ -449,11 +535,11 @@ class HolidayCountdown(commands.Cog):
                 font=fact_font
             )
 
-            line_width = (
+            text_width = (
                 bbox[2] - bbox[0]
             )
 
-            if line_width <= max_width:
+            if text_width <= max_width:
                 current_line = test_line
 
             else:
@@ -471,25 +557,57 @@ class HolidayCountdown(commands.Cog):
 
         y = fact_y
 
-        for line in lines[:6]:
+        for line in lines[:7]:
 
             # Shadow
             draw.text(
                 (fact_x + 2, y + 2),
                 line,
-                fill=(0, 0, 0, 150),
+                fill=(0, 0, 0, 120),
                 font=fact_font
             )
 
-            # Main
+            # Main text
             draw.text(
                 (fact_x, y),
                 line,
-                fill=(245, 245, 245),
+                fill=(240, 240, 240, 245),
                 font=fact_font
             )
 
-            y += 34
+            y += 28
+
+        # =========================
+        # WARM EDGE GLOW
+        # =========================
+
+        glow = Image.new(
+            "RGBA",
+            (width, height),
+            (0, 0, 0, 0)
+        )
+
+        glow_draw = ImageDraw.Draw(glow)
+
+        glow_draw.rounded_rectangle(
+            [
+                (board_x1, board_y1),
+                (board_x2, board_y2)
+            ],
+            radius=32,
+            outline=(255, 180, 80, 45),
+            width=3
+        )
+
+        overlay = Image.alpha_composite(
+            overlay,
+            glow
+        )
+
+        image = Image.alpha_composite(
+            image,
+            overlay
+        )
 
         # =========================
         # EXPORT
