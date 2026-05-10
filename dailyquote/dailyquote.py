@@ -107,28 +107,21 @@ class DailyQuoteCog(commands.Cog):
             # Run the synchronous OpenAI call in a background thread
             def _generate():
                 return self.client.images.generate(
-                    model="gpt-image-1",
-                    prompt=(
-                        f"Create a highly detailed, photo-realistic image directly inspired by the quote: \"{quote_text}\" - {author}. "
-                        f"Interpret the emotional tone, mood, and deeper meaning of the quote, but portray it in a **funny, witty, or lighthearted way** using humor and visual storytelling. "
-                        f"The image should feature realistic, emotionally expressive cats as the main characters — lifelike in texture, fur, and anatomy, but filled with personality and emotion. "
-                        f"Each cat should have clear facial expressions and body language that convey humor, irony, or exaggerated emotion relevant to the quote’s meaning. "
-                        f"Their eyes, poses, and interactions should tell a mini comedic story that visually represents the spirit or hidden truth of the quote. "
-                        f"The scene must look believable and photorealistic, but the situation or environment can be surreal, symbolic, or dreamlike — a visual metaphor that represents the quote’s message in a humorous way. "
-                        f"The environment should look cinematic yet playful, mixing realistic lighting and materials with surreal or absurd details that create a sense of clever visual irony. "
-                        f"The cats may be performing human-like actions, existing in imaginative or funny places, or interacting with symbolic props that visually echo the spirit of the quote. "
-                        f"Focus on expressive realism, emotional storytelling, and symbolic yet entertaining imagery — as if the quote has come to life as a short, funny, photorealistic story.\n\n"
-                        f"Guidelines:\n"
-                        f"- Do NOT include the actual quote text anywhere in the image.\n"
-                        f"- Optional small text may appear naturally in the environment (like signs, labels, or graffiti) but never the quote itself.\n"
-                        f"- Keep lighting, materials, and fur highly realistic, with cinematic depth, mood, and composition.\n"
-                        f"- The background should enhance the tone — for example, peaceful, dramatic, hopeful, mysterious, or funny — while staying photorealistic and coherent.\n"
-                        f"- Ensure the humor feels clever and expressive, not cartoonish — the cats should look real, not animated.\n"
-                        f"- Each image should tell a short, visual story that represents the message or emotional core of the quote through surreal realism and witty expression.\n"
-                        f"- Aspect ratio: 1:1 (square), suitable for daily posts."
+                    model="gpt-image-2",
+                    prompt = (
+                        f"Create a cinematic, photorealistic image inspired by the quote: \"{quote_text}\" by {author}. "
+                        f"Translate the quote into a visually uncanny scene with a subtle sense of wrongness, irony, and emotional tension. "
+                        f"The main subjects are realistic cats with lifelike fur, anatomy, eyes, and natural texture, but their expressions should feel unsettling, exaggerated, or strangely human. "
+                        f"Include one or two surreal details that make the scene feel almost normal at first glance, but increasingly strange on closer inspection. "
+                        f"The composition should tell a silent story through body language, expression, lighting, and props. "
+                        f"Use moody cinematic lighting, deep shadows, realistic materials, and a believable environment, while introducing a disturbing or absurd visual twist that reflects the quote’s deeper meaning. "
+                        f"The result should feel like a strange dream frozen in a photograph: believable, emotional, clever, and faintly eerie. "
+                        f"Do not include the quote text in the image. "
+                        f"Do not make it cartoonish or cute; make it real, atmospheric, and unsettling in a subtle way. "
+                        f"Aspect ratio: 1:1."
                     ),
                     n=1,
-                    size="1024x1024",
+                    size="1536x1024",
                     quality="medium"
                 )
 
