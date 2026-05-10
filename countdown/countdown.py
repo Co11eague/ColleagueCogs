@@ -6,11 +6,17 @@ import aiocron
 import discord
 import pytz
 
-from PIL import Image
-from PIL import ImageDraw
-from PIL import ImageFont
-from PIL import ImageFilter
+import json
+
 import os
+import base64
+from openai import OpenAI
+API_KEY_FILE = (
+    "/home/colleague/bot/cogs/"
+    "CogManager/cogs/"
+    "holidaycountdown/"
+    "openai_api_key.json"
+)
 
 
 from redbot.core import commands
@@ -74,6 +80,63 @@ COUNTDOWN_FACTS = {
     0: "Laukimas baigėsi – sveiki atvykę į Malagą."
 }
 
+COUNTDOWN_ACTIVITIES = {
+    53: "calmly sipping coffee while checking travel plans",
+    52: "wearing sunglasses and reading a Malaga tourist brochure",
+    51: "applying sunscreen very seriously",
+    50: "drinking a huge pint of beer proudly",
+    49: "sunbathing dramatically in a deck chair",
+    48: "covered in absurd amounts of tanning oil",
+    47: "wearing inflatable armbands and snorkel gear",
+    46: "building a tiny sandcastle",
+    45: "wearing giant diving flippers indoors",
+    44: "attempting to surf on the terrace floor",
+    43: "being fanned by robots like royalty",
+    42: "floating indoors on a flamingo pool float",
+    41: "wearing six pairs of sunglasses",
+    40: "holding a beach umbrella in fake wind",
+    39: "buried in sand up to his waist",
+    38: "doing beach yoga with sangria",
+    37: "wearing a ridiculous gold Malaga crown",
+    36: "being carried by robots like a king",
+    35: "DJing for invisible beach guests",
+    34: "driving the tractor like a yacht captain",
+    33: "parasailing low across the terrace",
+    32: "waterskiing across nothing",
+    31: "wearing full scuba gear",
+    30: "conducting tropical birds",
+    29: "lifeguarding the robots",
+    28: "launching beach balls from a cannon",
+    27: "hosting Malaga news live",
+    26: "flying a tiny plane banner",
+    25: "pool noodle sword fighting a robot",
+    24: "wrapped entirely in hotel towels",
+    23: "being worshipped by coconut-bearing robots",
+    22: "crowdsurfing over nobody",
+    21: "wearing a tuxedo while swimming",
+    20: "captaining a pirate ship",
+    19: "juggling flaming coconuts",
+    18: "painted like a tropical deity",
+    17: "descending by parachute",
+    16: "emerging dramatically from smoke",
+    15: "wearing angel wings and beach shorts",
+    14: "piloting a cardboard rocket",
+    13: "floating midair magically",
+    12: "arriving on a dolphin",
+    11: "riding a robot like a horse",
+    10: "wearing diamond swimwear",
+    9: "breaking through a wall heroically",
+    8: "summoning sangria telekinetically",
+    7: "levitating and glowing",
+    6: "carried by tiny beach servants",
+    5: "surfing on lava",
+    4: "ascending into heaven",
+    3: "transforming into a tropical god",
+    2: "opening a portal to Malaga",
+    1: "exploding with excitement while smiling",
+    0: "standing triumphantly on Malaga beach like an emperor"
+}
+
 
 class HolidayCountdown(commands.Cog):
     """Malaga countdown."""
@@ -97,8 +160,14 @@ class HolidayCountdown(commands.Cog):
 
         self.hour = 8
         self.minute = 0
+        self.api_key = None
+        self.client = None
+
 
         self.cron = None
+        
+        self.load_api_key()
+
 
         self.set_cron_job(
             self.hour,
@@ -148,504 +217,171 @@ class HolidayCountdown(commands.Cog):
 
         return "dienų"
 
-    def create_countdown_image(
+    async def generate_countdown_image(
         self,
         days_left,
         progress_percent,
         fact
     ):
-        width = 1000
-        height = 560
-
         current_dir = os.path.dirname(
             os.path.abspath(__file__)
         )
 
-        background_path = os.path.join(
+        cache_dir = os.path.join(
+            current_dir,
+            "generated"
+        )
+
+        os.makedirs(
+            cache_dir,
+            exist_ok=True
+        )
+
+        cached_file = os.path.join(
+            cache_dir,
+            f"day_{days_left}.png"
+        )
+
+        if os.path.exists(
+            cached_file
+        ):
+            with open(
+                cached_file,
+                "rb"
+            ) as f:
+                return f.read()
+
+        template_path = os.path.join(
             current_dir,
             "malaga_background.png"
         )
 
-        background = Image.open(
-            background_path
-        ).convert("RGB")
-
-        background = background.resize(
-            (width, height),
-            Image.LANCZOS
-        )
-
-        # Light blur so overlays blend naturally
-        background = background.filter(
-            ImageFilter.GaussianBlur(0.4)
-        )
-
-        image = background.convert("RGBA")
-
-        overlay = Image.new(
-            "RGBA",
-            (width, height),
-            (0, 0, 0, 0)
-        )
-
-        draw = ImageDraw.Draw(overlay)
-
-        # =========================
-        # FONTS
-        # =========================
-
-        title_font = ImageFont.truetype(
-            "DejaVuSans-Bold.ttf",
-            48
-        )
-
-        huge_font = ImageFont.truetype(
-            "DejaVuSans-Bold.ttf",
-            112
-        )
-
-        small_font = ImageFont.truetype(
-            "DejaVuSans.ttf",
-            24
-        )
-
-        fact_font = ImageFont.truetype(
-            "DejaVuSans.ttf",
-            21
-        )
-
-        day_font = ImageFont.truetype(
-            "DejaVuSans-Bold.ttf",
-            28
-        )
-
-        def text_size(text, font):
-            bbox = draw.textbbox(
-                (0, 0),
-                text,
-                font=font
+        activity = (
+            COUNTDOWN_ACTIVITIES.get(
+                days_left,
+                "relaxing"
             )
-
-            return (
-                bbox[2] - bbox[0],
-                bbox[3] - bbox[1]
-            )
-
-        # =========================
-        # MAIN WOODEN BOARD
-        # =========================
-
-        board_x1 = 35
-        board_y1 = 35
-        board_x2 = 585
-        board_y2 = 535
-
-        # Shadow
-        draw.rounded_rectangle(
-            [
-                (board_x1 + 8, board_y1 + 10),
-                (board_x2 + 8, board_y2 + 10)
-            ],
-            radius=32,
-            fill=(0, 0, 0, 90)
         )
 
-        # Main board
-        draw.rounded_rectangle(
-            [
-                (board_x1, board_y1),
-                (board_x2, board_y2)
-            ],
-            radius=32,
-            fill=(56, 39, 24, 220),
-            outline=(255, 255, 255, 35),
-            width=2
-        )
+        try:
 
-        # Wood plank highlights
-        for y in [
-            110,
-            170,
-            235,
-            300,
-            365,
-            430
-        ]:
-            draw.line(
-                [
-                    (board_x1 + 20, y),
-                    (board_x2 - 20, y)
-                ],
-                fill=(255, 255, 255, 10),
-                width=2
-            )
+            def _generate():
 
-        # =========================
-        # HEADER
-        # =========================
+                with open(
+                    template_path,
+                    "rb"
+                ) as img:
 
-        draw.rounded_rectangle(
-            [
-                (board_x1 + 18, board_y1 + 18),
-                (board_x2 - 18, board_y1 + 85)
-            ],
-            radius=24,
-            fill=(242, 151, 28, 235)
-        )
+                    return self.client.images.edit(
+                        model="gpt-image-2",
+                        image=img,
+                        prompt=f"""
+Use this exact image as base template.
 
-        title = "MALAGA 2026"
+Preserve:
+- same recognizable young man
+- same festive robots
+- same tractor
+- same terrace
+- same warm Malaga sunset
+- same cinematic visual identity
 
-        # Shadow
-        draw.text(
-            (74, 65),
-            title,
-            fill=(0, 0, 0),
-            font=title_font
-        )
+Today the man is:
 
-        # Main text
-        draw.text(
-            (71, 62),
-            title,
-            fill=(255, 255, 255),
-            font=title_font
-        )
+{activity}
 
-        # =========================
-        # CALENDAR CARD
-        # =========================
+As countdown approaches zero,
+his behaviour becomes increasingly absurd,
+surreal and overdramatic,
+while staying photorealistic.
 
-        card_x1 = 60
-        card_y1 = 175
-        card_x2 = 255
-        card_y2 = 432
+Update the countdown board naturally.
 
-        # Shadow
-        draw.rounded_rectangle(
-            [
-                (card_x1 + 6, card_y1 + 8),
-                (card_x2 + 6, card_y2 + 8)
-            ],
-            radius=18,
-            fill=(0, 0, 0, 70)
-        )
+Board title:
+MALAGA 2026
 
-        # Main card
-        draw.rounded_rectangle(
-            [
-                (card_x1, card_y1),
-                (card_x2, card_y2)
-            ],
-            radius=18,
-            fill=(245, 225, 190, 245),
-            outline=(120, 85, 40, 120),
-            width=2
-        )
+Pinned calendar:
+{days_left}
 
-        # Pin
-        draw.rounded_rectangle(
-            [
-                (card_x1 + 80, card_y1 - 14),
-                (card_x1 + 94, card_y1 + 10)
-            ],
-            radius=4,
-            fill=(80, 55, 25, 255)
-        )
+Below:
+{self.lithuanian_days(days_left)} iki kelionės
 
-        # =========================
-        # BIG NUMBER
-        # =========================
+Progress bar visually filled to exactly
+{progress_percent}%
 
-        days_text = str(days_left)
+Fact:
+{fact}
 
-        text_w, text_h = text_size(
-            days_text,
-            huge_font
-        )
+Typography must be:
+sharp
+readable
+natural
+physically integrated
 
-        text_x = (
-            card_x1 +
-            ((card_x2 - card_x1) - text_w) / 2
-        )
-
-        # Shadow
-        draw.text(
-            (text_x + 4, card_y1 + 36 + 4),
-            days_text,
-            fill=(0, 0, 0),
-            font=huge_font
-        )
-
-        # Main
-        draw.text(
-            (text_x, card_y1 + 36),
-            days_text,
-            fill=(232, 92, 39),
-            font=huge_font
-        )
-
-        # =========================
-        # DAY LABELS
-        # =========================
-
-        day_word = self.lithuanian_days(
-            days_left
-        )
-
-        line1 = day_word
-        line2 = "iki kelionės"
-
-        l1_w, _ = text_size(
-            line1,
-            day_font
-        )
-
-        l2_w, _ = text_size(
-            line2,
-            day_font
-        )
-
-        draw.text(
-            (
-                card_x1 +
-                ((card_x2 - card_x1) - l1_w) / 2,
-                card_y1 + 178
-            ),
-            line1,
-            fill=(40, 35, 28),
-            font=day_font
-        )
-
-        draw.text(
-            (
-                card_x1 +
-                ((card_x2 - card_x1) - l2_w) / 2,
-                card_y1 + 212
-            ),
-            line2,
-            fill=(40, 35, 28),
-            font=day_font
-        )
-
-        # =========================
-        # PROGRESS TEXT
-        # =========================
-
-        progress_text = (
-            f"Kelionės progresas: "
-            f"{progress_percent}%"
-        )
-
-        draw.text(
-            (296, 177),
-            progress_text,
-            fill=(255, 255, 255, 235),
-            font=small_font
-        )
-
-        # =========================
-        # PROGRESS BAR
-        # =========================
-
-        bar_x1 = 295
-        bar_y1 = 215
-        bar_x2 = 545
-        bar_y2 = 252
-
-        # Shadow
-        draw.rounded_rectangle(
-            [
-                (bar_x1 + 3, bar_y1 + 3),
-                (bar_x2 + 3, bar_y2 + 3)
-            ],
-            radius=18,
-            fill=(0, 0, 0, 110)
-        )
-
-        # Bar background
-        draw.rounded_rectangle(
-            [
-                (bar_x1, bar_y1),
-                (bar_x2, bar_y2)
-            ],
-            radius=18,
-            fill=(55, 60, 75, 240),
-            outline=(255, 255, 255, 40),
-            width=1
-        )
-
-        # Fill
-        fill_width = int(
-            (bar_x2 - bar_x1) *
-            (progress_percent / 100)
-        )
-
-        if fill_width > 0:
-
-            draw.rounded_rectangle(
-                [
-                    (bar_x1, bar_y1),
-                    (
-                        bar_x1 + fill_width,
-                        bar_y2
-                    )
-                ],
-                radius=18,
-                fill=(244, 145, 32)
-            )
-
-            # Shine
-            draw.rounded_rectangle(
-                [
-                    (bar_x1 + 3, bar_y1 + 3),
-                    (
-                        bar_x1 +
-                        max(3, fill_width - 3),
-                        bar_y1 + 14
-                    )
-                ],
-                radius=12,
-                fill=(255, 220, 150, 120)
-            )
-
-        # =========================
-        # FACT TEXT
-        # =========================
-
-        fact_x = 295
-        fact_y = 285
-        max_width = 245
-
-        words = fact.split()
-
-        lines = []
-        current_line = ""
-
-        for word in words:
-
-            test_line = (
-                current_line +
-                " " +
-                word
-            ).strip()
-
-            bbox = draw.textbbox(
-                (0, 0),
-                test_line,
-                font=fact_font
-            )
-
-            text_width = (
-                bbox[2] - bbox[0]
-            )
-
-            if text_width <= max_width:
-                current_line = test_line
-
-            else:
-                if current_line:
-                    lines.append(
-                        current_line
+Professional luxury travel campaign.
+No digital overlays.
+No fake pasted graphics.
+Photorealistic.
+"""
                     )
 
-                current_line = word
-
-        if current_line:
-            lines.append(
-                current_line
+            response = await asyncio.to_thread(
+                _generate
             )
 
-        y = fact_y
+            if (
+                response
+                and response.data
+            ):
+                image_bytes = (
+                    base64.b64decode(
+                        response.data[0]
+                        .b64_json
+                    )
+                )
 
-        for line in lines[:7]:
+                with open(
+                    cached_file,
+                    "wb"
+                ) as f:
+                    f.write(
+                        image_bytes
+                    )
 
-            # Shadow
-            draw.text(
-                (fact_x + 2, y + 2),
-                line,
-                fill=(0, 0, 0, 120),
-                font=fact_font
+                return image_bytes
+
+        except Exception as e:
+            print(
+                f"Generation error: {e}"
             )
 
-            # Main text
-            draw.text(
-                (fact_x, y),
-                line,
-                fill=(240, 240, 240, 245),
-                font=fact_font
-            )
-
-            y += 28
-
-        # =========================
-        # WARM EDGE GLOW
-        # =========================
-
-        glow = Image.new(
-            "RGBA",
-            (width, height),
-            (0, 0, 0, 0)
-        )
-
-        glow_draw = ImageDraw.Draw(glow)
-
-        glow_draw.rounded_rectangle(
-            [
-                (board_x1, board_y1),
-                (board_x2, board_y2)
-            ],
-            radius=32,
-            outline=(255, 180, 80, 45),
-            width=3
-        )
-
-        overlay = Image.alpha_composite(
-            overlay,
-            glow
-        )
-
-        image = Image.alpha_composite(
-            image,
-            overlay
-        )
-
-        # =========================
-        # EXPORT
-        # =========================
-
-        final_image = image.convert(
-            "RGB"
-        )
-
-        buffer = BytesIO()
-
-        final_image.save(
-            buffer,
-            format="PNG",
-            quality=95
-        )
-
-        buffer.seek(0)
-
-        return buffer
+        return None
 
     async def send_countdown(
         self,
         custom_channel=None
     ):
+        if not self.client:
+            return
+
         try:
-            if custom_channel:
+
+            # Manual command
+            if custom_channel is not None:
                 channel = custom_channel
 
+            # Scheduled cron send
             else:
-                channel = (
-                    await self.bot.fetch_channel(
-                        self.channel_id
-                    )
+                channel = await self.bot.fetch_channel(
+                    self.channel_id
                 )
 
-        except Exception:
+        except Exception as e:
+            print(
+                f"Channel error: {e}"
+            )
             return
+
 
         now = datetime.now(
             self.timezone
@@ -654,43 +390,46 @@ class HolidayCountdown(commands.Cog):
         today = now.date()
 
         days_left = (
-            self.holiday_date -
-            today
+            self.holiday_date
+            - today
         ).days
 
         if days_left < 0:
             return
 
         days_passed = (
-            today -
-            self.start_date
+            today
+            - self.start_date
         ).days
 
         progress_percent = round(
             (
-                days_passed /
-                self.total_days
-            ) * 100
+                days_passed
+                / self.total_days
+            )
+            * 100
         )
 
         fact = COUNTDOWN_FACTS.get(
             days_left,
-            (
-                "Kiekviena diena "
-                "priartina prie Malagos."
-            )
+            "Kiekviena diena priartina prie Malagos."
         )
 
-        image_buffer = (
-            self.create_countdown_image(
+        image_bytes = await (
+            self.generate_countdown_image(
                 days_left,
                 progress_percent,
                 fact
             )
         )
 
+        if not image_bytes:
+            return
+
         file = discord.File(
-            image_buffer,
+            BytesIO(
+                image_bytes
+            ),
             filename="malaga.png"
         )
 
@@ -752,6 +491,53 @@ class HolidayCountdown(commands.Cog):
                 f"nustatytas į "
                 f"{hour:02}:{minute:02}"
             )
+        )
+    def load_api_key(self):
+        if os.path.exists(API_KEY_FILE):
+            with open(
+                API_KEY_FILE,
+                "r"
+            ) as f:
+                data = json.load(f)
+
+                self.api_key = data.get(
+                    "api_key"
+                )
+
+                if self.api_key:
+                    self.client = OpenAI(
+                        api_key=self.api_key
+                    )
+
+    def save_api_key(
+        self,
+        api_key
+    ):
+        with open(
+            API_KEY_FILE,
+            "w"
+        ) as f:
+            json.dump(
+                {"api_key": api_key},
+                f
+            )
+
+    @commands.command()
+    async def set_openai_key(
+        self,
+        ctx,
+        api_key: str
+    ):
+        self.save_api_key(
+            api_key
+        )
+
+        self.client = OpenAI(
+            api_key=api_key
+        )
+
+        await ctx.send(
+            "OpenAI key saved."
         )
 
 
