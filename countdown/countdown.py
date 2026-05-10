@@ -181,7 +181,7 @@ class HolidayCountdown(commands.Cog):
 
         # Slight blur for readability
         background = background.filter(
-            ImageFilter.GaussianBlur(1.5)
+            ImageFilter.GaussianBlur(0.6)
         )
 
         image = background.convert("RGBA")
