@@ -278,6 +278,11 @@ class HolidayCountdown(commands.Cog):
                         prompt=f"""
 Use this exact image as base template.
 
+IMPORTANT IDENTITY LOCK:
+- Preserve the same exact man's face and head shape.
+- Do not change his identity, facial structure, eyes, nose, jawline, hairstyle, or age appearance.
+- Keep him clearly recognizable as the same person from the reference image.
+
 Preserve:
 - same recognizable young man
 - same festive robots
@@ -322,6 +327,9 @@ Professional luxury travel campaign.
 No digital overlays.
 No fake pasted graphics.
 Photorealistic.
+
+HARD RULE:
+Do not alter the man's face or identity.
 """
                     )
 
