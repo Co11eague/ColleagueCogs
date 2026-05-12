@@ -317,6 +317,11 @@ Progress bar visually filled to exactly
 Fact:
 {fact}
 
+The man may partially or fully cover the board if needed for the scene,
+but the full countdown information must still be visible somewhere in the image
+through a different composition, repositioning, inset board, side panel,
+sign, card, or another realistic visual element.
+
 Typography must be:
 sharp
 readable
