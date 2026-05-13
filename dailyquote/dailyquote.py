@@ -109,15 +109,16 @@ class DailyQuoteCog(commands.Cog):
                 return self.client.images.generate(
                     model="gpt-image-2",
                     prompt = (
-                        f"Create a cinematic, photorealistic image inspired by the quote: \"{quote_text}\" by {author}. "
-                        f"Translate the quote into a visually uncanny scene with a subtle sense of wrongness, irony, and emotional tension. "
-                        f"The main subjects are realistic cats with lifelike fur, anatomy, eyes, and natural texture, but their expressions should feel unsettling, exaggerated, or strangely human. "
-                        f"Include one or two surreal details that make the scene feel almost normal at first glance, but increasingly strange on closer inspection. "
-                        f"The composition should tell a silent story through body language, expression, lighting, and props. "
-                        f"Use moody cinematic lighting, deep shadows, realistic materials, and a believable environment, while introducing a disturbing or absurd visual twist that reflects the quote’s deeper meaning. "
-                        f"The result should feel like a strange dream frozen in a photograph: believable, emotional, clever, and faintly eerie. "
-                        f"Do not include the quote text in the image. "
-                        f"Do not make it cartoonish or cute; make it real, atmospheric, and unsettling in a subtle way. "
+                        f'Create a cinematic, photorealistic image inspired by the quote: "{quote_text}" by {author}. '
+                        f'Translate the quote into a surreal visual scene filled with irony, emotional tension, and dreamlike strangeness. '
+                        f'The main subjects are realistic cats with lifelike fur, anatomy, and natural texture, but their expressions should feel oddly human, contemplative, exaggerated, or quietly absurd. '
+                        f'The setting can be impossible, symbolic, or dreamlike: floating architecture, distorted scale, strange weather, impossible interiors, or poetic visual contradictions. '
+                        f'Include surreal details that feel clever and intriguing rather than frightening. '
+                        f'The composition should tell a silent story through body language, expression, symbolism, and unexpected visual relationships. '
+                        f'Use luminous cinematic lighting, rich color, elegant contrast, and striking visual clarity. '
+                        f'The result should feel like an intelligent surreal photograph: strange, beautiful, emotionally layered, and slightly uncanny, with a sense of wonder or dark humor rather than horror. '
+                        f'Do not include the quote text in the image. '
+                        f'Do not make it cartoonish, gothic, creepy, bleak, or horror-like.'
                     ),
                     n=1,
                     size="1536x1024",
