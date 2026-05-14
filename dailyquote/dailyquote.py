@@ -55,6 +55,7 @@ class DailyQuoteCog(commands.Cog):
                 quotes = [
                     {"quote": row[0], "author": row[1]}
                     for row in reader
+                    if len(row) >= 3 and "romance" not in row[2].lower()
                 ]
 
                 print("Quotes loaded")
